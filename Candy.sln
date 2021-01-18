@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1208D997-71F2-4B73-973B-8BA7737E0566}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy", "src\Candy.Driver\Candy.csproj", "{17486118-992C-4357-B821-2D99A5BD7E6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy", "src\Candy\Candy.csproj", "{17486118-992C-4357-B821-2D99A5BD7E6F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.MySql.XUnitTest", "test\Candy.MySql.XUnitTest\Candy.MySql.XUnitTest.csproj", "{D9A129BC-A599-4057-B2DE-ADCABE75528E}"
 EndProject
@@ -21,9 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.Generator", "generato
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.Generator.Common", "generator\Candy.Generator.Common\Candy.Generator.Common.csproj", "{E6D4814A-29FC-46F5-916E-A9E638C0CEDD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.MySql", "src\Candy.Driver.MySql\Candy.MySql.csproj", "{7971FD76-9802-4476-9AB6-8A199014F142}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.MySql", "src\Candy.MySql\Candy.MySql.csproj", "{7971FD76-9802-4476-9AB6-8A199014F142}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.PostgreSql", "src\Candy.Driver.PostgreSql\Candy.PostgreSql.csproj", "{A7B177E2-73A0-48CE-92C3-CD69B354F73E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Candy.PostgreSql", "src\Candy.PostgreSql\Candy.PostgreSql.csproj", "{A7B177E2-73A0-48CE-92C3-CD69B354F73E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Candy.PostgreSql.XUnitTest", "test\Candy.PostgreSql.XUnitTest\Candy.PostgreSql.XUnitTest.csproj", "{544BE349-531D-429F-B201-86E285AFF86E}"
 EndProject

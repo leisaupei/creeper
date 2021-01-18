@@ -1,15 +1,7 @@
-﻿using Meta.xUnitTest.Model;
-using System;
-using Meta.Driver.Model;
-using Meta.Driver.DbHelper;
-using Newtonsoft.Json.Linq;
-using Npgsql.TypeMapping;
-using Meta.Driver.Extensions;
+﻿using Candy.Common;
+using Candy.PostgreSql;
+using Candy.PostgreSql.Extensions;
 using Npgsql;
-using Candy.Driver.Common;
-using Candy.Driver.Model;
-using Candy.Driver.PostgreSql;
-using Candy.Driver.Extensions;
 
 namespace Candy.XUnitTest.Options
 {
@@ -17,11 +9,11 @@ namespace Candy.XUnitTest.Options
 	/// <summary>
 	/// 主库
 	/// </summary>
-	public struct DbMain : IDbName { }
+	public struct DbMain : ICandyDbName { }
 	/// <summary>
 	/// 从库
 	/// </summary>
-	public struct DbSecondary : IDbName { }
+	public struct DbSecondary : ICandyDbName { }
 	#endregion
 	/// <summary>
 	/// 由生成器生成, 会覆盖

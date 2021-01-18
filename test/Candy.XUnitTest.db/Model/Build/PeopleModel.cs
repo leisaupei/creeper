@@ -1,6 +1,6 @@
 ﻿using System;
-using Candy.Driver.Common;
-using Candy.Driver.Model;
+using Candy.Common;
+using Candy.Model;
 using Newtonsoft.Json.Linq;
 
 namespace Candy.XUnitTest.Model

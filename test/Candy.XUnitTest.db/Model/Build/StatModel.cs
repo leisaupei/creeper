@@ -1,5 +1,5 @@
-﻿using Candy.Driver.Common;
-using Candy.Driver.Model;
+﻿using Candy.Common;
+using Candy.Model;
 
 namespace Candy.XUnitTest.Model
 {

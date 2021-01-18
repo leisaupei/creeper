@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Candy.Driver.PostgreSql\Candy.Driver.PostgreSql.csproj" />
-    <ProjectReference Include="..\..\src\Candy.Driver\Candy.Driver.csproj" />
+    <ProjectReference Include="..\..\src\Candy.PostgreSql\Candy.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\Candy\Candy.csproj" />
     <ProjectReference Include="..\Candy.Generator.Common\Candy.Generator.Common.csproj" />
   </ItemGroup>
 
