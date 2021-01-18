@@ -7,7 +7,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Candy.Driver.DbHelper
+namespace Candy.Driver.PostgreSql
 {
 	public class TypeHelper
 	{

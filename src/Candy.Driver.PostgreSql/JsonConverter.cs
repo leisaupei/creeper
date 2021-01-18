@@ -10,7 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 
-namespace Candy.Driver.Extensions
+namespace Candy.Driver.PostgreSql
 {
 	/// <summary>
 	/// ip地址

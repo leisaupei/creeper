@@ -4,7 +4,7 @@ using System;
 using System.Data;
 using System.Linq;
 
-namespace Candy.Driver.Model
+namespace Candy.Driver.PostgreSql
 {
 	/// <summary>
 	/// db配置

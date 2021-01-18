@@ -7,7 +7,7 @@ using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Candy.Driver.Model
+namespace Candy.Driver.PostgreSql
 {
 	public class CandyPostgreSqlDbConnectionOptions : ICandyDbConnectionOptions
 	{
