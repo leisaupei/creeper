@@ -1,2 +1,3 @@
-# candy
-Simplify Meta SQL Core
+# Candy
+Simplify SQL Core
+## Developing...
