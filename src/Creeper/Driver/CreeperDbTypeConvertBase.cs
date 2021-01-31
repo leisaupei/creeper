@@ -10,14 +10,38 @@ using System.Reflection;
 
 namespace Creeper.Driver
 {
+	/// <summary>
+	/// 
+	/// </summary>
 	public abstract class CreeperDbTypeConvertBase : ICreeperDbTypeConverter
 	{
+		/// <summary>
+		/// 
+		/// </summary>
 		public abstract DataBaseKind DataBaseKind { get; }
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public abstract T ConvertDbData<T>(object value);
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="convertType"></param>
+		/// <returns></returns>
 		public abstract object ConvertDbData(object value, Type convertType);
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="reader"></param>
+		/// <param name="convertType"></param>
+		/// <returns></returns>
 		public object ConvertDataReader(IDataReader reader, Type convertType)
 		{
 			bool isValueOrString = convertType == typeof(string) || convertType.IsValueType;
@@ -50,6 +74,12 @@ namespace Creeper.Driver
 			return model;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="objReader"></param>
+		/// <returns></returns>
 		public T ConvertDataReader<T>(IDataReader objReader)
 			=> (T)ConvertDataReader(objReader, typeof(T));
 
@@ -130,6 +160,11 @@ namespace Creeper.Driver
 			return ConvertDbData(value, valueType);
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="sqlBuilder"></param>
+		/// <returns></returns>
 		public abstract string ConvertSqlToString(ISqlBuilder sqlBuilder);
 	}
 }

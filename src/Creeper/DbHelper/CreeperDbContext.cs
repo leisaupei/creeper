@@ -57,18 +57,18 @@ namespace Creeper.DbHelper
 		/// <exception cref="ArgumentOutOfRangeException">options长度为0</exception>
 		public CreeperDbContext(IServiceProvider serviceProvider)
 		{
-			var CreeperOptions = serviceProvider.GetService<IOptions<CreeperOptions>>().Value;
-			var CreeperDbCache = serviceProvider.GetService<ICreeperDbCache>();
-			if (CreeperDbCache != null) CreeperDbCache = CreeperDbCache;
+			var creeperOptions = serviceProvider.GetService<IOptions<CreeperOptions>>().Value;
+			var creeperDbCache = serviceProvider.GetService<ICreeperDbCache>();
+			if (creeperDbCache != null) CreeperDbCache = creeperDbCache;
 
-			DbTypeStrategy = CreeperOptions.DbTypeStrategy;
+			DbTypeStrategy = creeperOptions.DbTypeStrategy;
 
-			_defaultDbOptionName = CreeperOptions.DefaultDbOptionName?.Name ?? "DbMain";
+			_defaultDbOptionName = creeperOptions.DefaultDbOptionName?.Name ?? "DbMain";
 
 			//if (!CreeperOptions.DbOptions?.Any() ?? true)
 			//	throw new ArgumentOutOfRangeException(nameof(CreeperOptions.DbOptions));
 
-			foreach (var option in CreeperOptions.DbOptions)
+			foreach (var option in creeperOptions.DbOptions)
 			{
 				if (option.Main == null)
 					throw new ArgumentNullException(nameof(option.Main), $"Connection string model is null");
@@ -86,7 +86,7 @@ namespace Creeper.DbHelper
 				}
 			}
 
-			foreach (var convert in CreeperOptions.CreeperDbTypeConverters)
+			foreach (var convert in creeperOptions.CreeperDbTypeConverters)
 			{
 				if (!_dbTypeConverts.ContainsKey(convert.DataBaseKind))
 					_dbTypeConverts[convert.DataBaseKind] = convert;

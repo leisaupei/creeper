@@ -8,20 +8,24 @@
     <Description>Creeper postgresql实现</Description>
     <PackageProjectUrl>https://github.com/leisaupei/creeper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
-    <PackageReleaseNotes>初始化项目框架</PackageReleaseNotes>
+    <PackageReleaseNotes>升级creeper版本</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <PackageLicenseFile></PackageLicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>leisaupei</Copyright>
-    <FileVersion>1.0.0.0</FileVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.1\Creeper.PostgreSql.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="5.0.1.1" />
     <PackageReference Include="Npgsql.Json.NET" Version="5.0.1.1" />
     <PackageReference Include="Npgsql.LegacyPostgis" Version="5.0.1.1" />
-    <PackageReference Include="Creeper" Version="1.0.0" />
+    <PackageReference Include="Creeper" Version="1.0.1" />
   </ItemGroup>
   
 </Project>

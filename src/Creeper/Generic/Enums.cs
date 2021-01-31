@@ -18,10 +18,7 @@ namespace Creeper.Generic
 	{
 		One = 1, List, Rows
 	}
-	//internal enum ExpressionExcutionType
-	//{
-	//	None = 0, Single, Union, Condition, SingleForNoAlias
-	//}
+
 	/// <summary>
 	/// 数据库类型
 	/// </summary>

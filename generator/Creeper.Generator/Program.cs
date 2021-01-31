@@ -58,7 +58,9 @@ namespace Creeper.Generator
 			services.Configure<PostgresExcepts>(cfg.GetSection("GenerateRules:PostgresqlRules:Excepts"));
 			services.AddSingleton<ICreeperGeneratorProvider, PostgerSqlGeneratorProvider>();
 			services.TryAddSingleton<CreeperGeneratorProviderFactory>();
+
 			services.TryAddSingleton<ICreeperGenerator, CreeperGenerator>();
+
 			services.AddCreeperDbContext(option =>
 			{
 				option.AddPostgreSqlOptions();
@@ -66,8 +68,8 @@ namespace Creeper.Generator
 			var serviceProvider = services.BuildServiceProvider();
 
 			var generatorFactory = serviceProvider.GetService<CreeperGeneratorProviderFactory>();
-			var CreeperGenerator = serviceProvider.GetService<ICreeperGenerator>();
-			var CreeperDbContext = serviceProvider.GetService<ICreeperDbContext>();
+			var creeperGenerator = serviceProvider.GetService<ICreeperGenerator>();
+			var creeperDbContext = serviceProvider.GetService<ICreeperDbContext>();
 			if (args?.Length > 0)
 			{
 				CreeperGenerateBuilder model = new CreeperGenerateBuilder();
@@ -102,7 +104,7 @@ namespace Creeper.Generator
 					}
 					if (finish) break;
 				}
-				CreeperGenerator.Gen(model);
+				creeperGenerator.Gen(model);
 				Console.WriteLine("successful...");
 			}
 			Console.ReadKey();

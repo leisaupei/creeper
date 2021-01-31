@@ -9,10 +9,10 @@ namespace Creeper.PostgreSql
 	/// <summary>
 	/// db配置
 	/// </summary>
-	/// <typeparam name="TDbMaterName">主库名称</typeparam>
+	/// <typeparam name="TDbMainName">主库名称</typeparam>
 	/// <typeparam name="TDbSecondaryName">从库名称</typeparam>
-	public abstract class BasePostgreSqlDbOption<TDbMaterName, TDbSecondaryName> : ICreeperDbOption
-        where TDbMaterName : struct, ICreeperDbName
+	public abstract class BasePostgreSqlDbOption<TDbMainName, TDbSecondaryName> : ICreeperDbOption
+        where TDbMainName : struct, ICreeperDbName
         where TDbSecondaryName : struct, ICreeperDbName
     {
         private readonly string _mainConnectionString;
@@ -34,7 +34,7 @@ namespace Creeper.PostgreSql
         /// 主库对象
         /// </summary>
         ICreeperDbConnectionOption ICreeperDbOption.Main =>
-            new PostgreSqlDbConnectionOptions(_mainConnectionString, typeof(TDbMaterName).Name, Options);
+            new PostgreSqlDbConnectionOptions(_mainConnectionString, typeof(TDbMainName).Name, Options);
 
         /// <summary>
         /// 从库数组对象
