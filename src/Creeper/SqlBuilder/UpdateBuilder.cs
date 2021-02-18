@@ -24,11 +24,6 @@ namespace Creeper.SqlBuilder
 		private readonly List<string> _setList = new List<string>();
 
 		/// <summary>
-		/// 是否返回实体类
-		/// </summary>
-		private bool _isReturn = false;
-
-		/// <summary>
 		/// set 数量
 		/// </summary>
 		public int SetCount => _setList.Count;
@@ -205,7 +200,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public int ToRows(out TModel refInfo)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.Rows;
 			refInfo = base.ToOne<TModel>();
 			if (refInfo == null) return 0;
 			return 1;
@@ -218,24 +213,24 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public int ToRows(out List<TModel> refInfo)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.Rows;
 			refInfo = base.ToList<TModel>();
 			return refInfo.Count;
 		}
 
-        /// <summary>
-        /// 管道模式
-        /// </summary>
-        /// <returns></returns>
-        public UpdateBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
+		/// <summary>
+		/// 管道模式
+		/// </summary>
+		/// <returns></returns>
+		public UpdateBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
 
-        /// <summary>
-        /// 插入数据库并返回数据
-        /// </summary>
-        /// <returns></returns>
-        public TModel ToOne()
+		/// <summary>
+		/// 插入数据库并返回数据
+		/// </summary>
+		/// <returns></returns>
+		public TModel ToOne()
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.One;
 			return base.ToOne<TModel>();
 		}
 
@@ -246,7 +241,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public new Task<T> ToOneAsync<T>(CancellationToken cancellationToken = default)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.One;
 			return base.ToOneAsync<T>(cancellationToken);
 		}
 
@@ -257,7 +252,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public new Task<List<T>> ToListAsync<T>(CancellationToken cancellationToken = default)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.List;
 			return base.ToListAsync<T>(cancellationToken);
 		}
 
@@ -268,7 +263,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public new List<T> ToList<T>()
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.List;
 			return base.ToList<T>();
 		}
 
@@ -280,14 +275,14 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <exception cref="ArgumentNullException">count of where or set is 0</exception>
 		/// <returns></returns>
-		public override string GetCommandTextString()
+		public override string GetCommandText()
 		{
 			if (WhereList.Count == 0)
 				throw new ArgumentNullException(nameof(WhereList));
 			if (_setList.Count == 0)
 				throw new ArgumentNullException(nameof(_setList));
 			var ret = string.Empty;
-			if (_isReturn)
+			if (ReturnType != PipeReturnType.Rows)
 			{
 				Fields = EntityHelper.GetModelTypeFieldsString<TModel>(MainAlias);
 				ret = $"RETURNING {Fields}";

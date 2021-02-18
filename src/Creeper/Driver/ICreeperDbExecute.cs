@@ -10,6 +10,14 @@ namespace Creeper.Driver
 {
 	public interface ICreeperDbExecute : ICreeperDbComponent, IDisposable
 	{
+		/// <summary>
+		/// 是否在执行事务中
+		/// </summary>
+		bool InTransaction { get; }
+
+		/// <summary>
+		/// 数据库连接配置
+		/// </summary>
 		ICreeperDbConnectionOption ConnectionOptions { get; }
 
 		/// <summary>

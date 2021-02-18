@@ -1,4 +1,5 @@
-﻿using Creeper.DBHelper;
+﻿using System.Data;
+using Creeper.DBHelper;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Npgsql;
@@ -12,19 +13,19 @@ using System.Text.RegularExpressions;
 
 namespace Creeper.PostgreSql
 {
-    public class TypeHelper
+    internal class TypeHelper
     {
+        private static readonly Regex _paramPattern = new Regex(@"(^(\-|\+)?\d+(\.\d+)?$)|(^SELECT\s.+\sFROM\s)|(true)|(false)", RegexOptions.IgnoreCase);
         public static string SqlToString(string sql, List<DbParameter> nps)
         {
-            NpgsqlDbType[] isString = { NpgsqlDbType.Char, NpgsqlDbType.Varchar, NpgsqlDbType.Text };
-            foreach (NpgsqlParameter p in nps)
+            foreach (var p in nps)
             {
                 var value = GetParamValue(p.Value);
                 var key = string.Concat("@", p.ParameterName);
                 if (value == null)
                     sql = SqlHelper.GetNullSql(sql, key);
 
-                else if (Regex.IsMatch(value, @"(^(\-|\+)?\d+(\.\d+)?$)|(^SELECT\s.+\sFROM\s)|(true)|(false)", RegexOptions.IgnoreCase) && !isString.Contains(p.NpgsqlDbType))
+                else if (_paramPattern.IsMatch(value) && p.DbType == DbType.String)
                     sql = sql.Replace(key, value);
 
                 else if (value.Contains("array"))
@@ -40,7 +41,7 @@ namespace Creeper.PostgreSql
             var jobj = new Hashtable();
             jobj["cmdText"] = sql;
             var ht = new Hashtable();
-            foreach (NpgsqlParameter p in nps)
+            foreach (var p in nps)
                 ht[p.ParameterName] = p.Value;
 
             jobj["parameters"] = ht;

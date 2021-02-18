@@ -1275,7 +1275,7 @@ namespace Creeper.SqlBuilder
 		/// 
 		/// </summary>
 		/// <returns></returns>
-		public override string GetCommandTextString()
+		public override string GetCommandText()
 		{
 			if (string.IsNullOrEmpty(Fields))
 				Fields = EntityHelper.GetModelTypeFieldsString<TModel>(MainAlias);

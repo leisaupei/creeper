@@ -22,11 +22,6 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		private readonly Dictionary<string, string> _insertList = new Dictionary<string, string>();
 
-		/// <summary>
-		/// 是否返回实体类
-		/// </summary>
-		private bool _isReturn = false;
-
 		internal InsertBuilder(ICreeperDbContext dbContext) : base(dbContext) { }
 
 		internal InsertBuilder(ICreeperDbExecute dbExecute) : base(dbExecute) { }
@@ -129,20 +124,20 @@ namespace Creeper.SqlBuilder
 		public new ValueTask<int> ToRowsAsync(CancellationToken cancellationToken = default)
 			=> base.ToRowsAsync(cancellationToken);
 
-        /// <summary>
-        /// 返回受影响行数
-        /// </summary>
-        /// <returns></returns>
-        public InsertBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
+		/// <summary>
+		/// 返回受影响行数
+		/// </summary>
+		/// <returns></returns>
+		public InsertBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
 
-        /// <summary>
-        /// 插入数据库并返回数据
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public int ToRows<T>(out T info)
+		/// <summary>
+		/// 插入数据库并返回数据
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public int ToRows<T>(out T info)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.Rows;
 			info = ToOne<T>();
 			return info != null ? 1 : 0;
 		}
@@ -153,7 +148,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public TModel ToOne()
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.One;
 			return ToOne<TModel>();
 		}
 
@@ -163,18 +158,18 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public Task<TModel> ToOneAsync(CancellationToken cancellationToken = default)
 		{
-			_isReturn = true;
+			ReturnType = PipeReturnType.One;
 			return base.ToOneAsync<TModel>(cancellationToken);
 		}
 		#region Override
 		public override string ToString() => base.ToString();
 
-		public override string GetCommandTextString()
+		public override string GetCommandText()
 		{
 			if (!_insertList.Any())
 				throw new ArgumentNullException(nameof(_insertList));
 			var field = string.Join(", ", _insertList.Keys);
-			var ret = _isReturn ? $"RETURNING {field}" : "";
+			var ret = ReturnType == PipeReturnType.One ? $"RETURNING {field}" : "";
 			if (WhereList.Count == 0)
 				return $"INSERT INTO {MainTable} ({field}) VALUES({string.Join(", ", _insertList.Values)}) {ret}";
 			return $"INSERT INTO {MainTable} ({field}) SELECT {string.Join(", ", _insertList.Values)} WHERE {string.Join("\nAND", WhereList)} {ret}";

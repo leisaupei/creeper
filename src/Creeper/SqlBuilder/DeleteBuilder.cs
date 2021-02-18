@@ -41,7 +41,7 @@ namespace Creeper.SqlBuilder
 		#region Override
 		public override string ToString() => base.ToString();
 
-		public override string GetCommandTextString()
+		public override string GetCommandText()
 		{
 			if (WhereList.Count == 0)
 				throw new ArgumentNullException(nameof(WhereList));

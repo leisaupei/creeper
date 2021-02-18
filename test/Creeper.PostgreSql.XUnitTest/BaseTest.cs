@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using Creeper.Driver;
 using Creeper.Generic;
 using Creeper.PostgreSql.XUnitTest.Entity.Options;
+using Creeper.PostgreSql.XUnitTest.Extensions;
 
 namespace Creeper.PostgreSql.XUnitTest
 {
@@ -37,6 +38,7 @@ namespace Creeper.PostgreSql.XUnitTest
 				{
 					options.DefaultDbOptionName = typeof(DbMain);
 					options.DbTypeStrategy = DataBaseTypeStrategy.SecondaryFirstOfMainIfEmpty;
+					options.UseCache<CopyCustomDbCache>();
 					options.AddPostgreSql(new PostgreSqlDbOptions.MainPostgreSqlDbOption(TestMainConnectionString, new[] { TestSecondaryConnectionString }));
 				});
 				var serviceProvider = services.BuildServiceProvider();

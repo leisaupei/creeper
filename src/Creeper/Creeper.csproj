@@ -8,25 +8,24 @@
     <Description>Creeper orm</Description>
     <PackageProjectUrl>https://github.com/leisaupei/creeper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
-    <PackageReleaseNotes>初始化框架</PackageReleaseNotes>
+    <PackageReleaseNotes>优化代码, 新增ToOne/ToScalar自定义一级缓存</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <PackageLicenseFile></PackageLicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>leisaupei</Copyright>
-    <FileVersion>1.0.1.0</FileVersion>
-    <PackageId>Creeper</PackageId>
+    <FileVersion>1.0.2.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.1\Creeper.xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
 </Project>

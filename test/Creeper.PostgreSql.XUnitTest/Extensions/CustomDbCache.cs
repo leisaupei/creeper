@@ -1,0 +1,60 @@
+﻿using Creeper.Driver;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace Creeper.PostgreSql.XUnitTest.Extensions
+{
+    public class CustomDbCache : ICreeperDbCache, IDisposable
+    {
+        private readonly CSRedis.CSRedisClient _redisClient = null;
+        public CustomDbCache()
+        {
+            _redisClient = new CSRedis.CSRedisClient("localhost:6379,defaultDatabase=13,name=xxx,password=12345,prefix=fc,abortConnect=false");
+            _redisClient.CurrentDeserialize = (value, type) =>
+            {
+                if (value == null) return null;
+                if (value is string str) return str;
+                return JsonSerializer.Deserialize(value, GetOriginalType(type));
+            };
+            _redisClient.CurrentSerialize = value =>
+            {
+                if (value == null) return null;
+                if (value is string str) return str;
+                return JsonSerializer.Serialize(value);
+            };
+        }
+        /// <summary>
+        /// 当类型是Nullable&lt;T&gt;,则返回T, 否则返回传入类型
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        private static Type GetOriginalType(Type type) => type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(Nullable<>)) ? Nullable.GetUnderlyingType(type) : type;
+
+        private static readonly TimeSpan _expireTime = TimeSpan.FromMinutes(10);
+
+        public bool Exists(string key) => _redisClient.Exists(key);
+
+        public Task<bool> ExistsAsync(string key) => _redisClient.ExistsAsync(key);
+
+        public object Get(string key, Type type) => _redisClient.CurrentDeserialize(_redisClient.Get(key), type);
+
+        public async Task<object> GetAsync(string key, Type type) => _redisClient.CurrentDeserialize(await _redisClient.GetAsync(key), type);
+
+        public void Remove(params string[] keys) => _redisClient.Del(keys);
+
+        public Task RemoveAsync(params string[] keys) => _redisClient.DelAsync(keys);
+
+        public bool Set(string key, object value) => _redisClient.Set(key, _redisClient.CurrentSerialize(value), _expireTime);
+
+        public Task<bool> SetAsync(string key, object value) => _redisClient.SetAsync(key, _redisClient.CurrentSerialize(value), _expireTime);
+
+        public void Dispose()
+        {
+            _redisClient.Dispose();
+        }
+    }
+}

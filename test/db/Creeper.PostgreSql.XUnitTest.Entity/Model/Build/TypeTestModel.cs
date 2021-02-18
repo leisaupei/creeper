@@ -1,6 +1,6 @@
-﻿/* ##########################################################
- * #   此文件由 https://github.com/leisaupei/creeper 生成    #
- * ##########################################################
+﻿/* ################################################################################
+ * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
+ * ################################################################################
  */
 using Creeper.Driver;
 using System;
@@ -14,7 +14,7 @@ using System.Xml;
 using System.Net;
 using System.Threading.Tasks;
 using System.Threading;
-using Creeper.Generic;
+using Creeper.Attributes;
 using Creeper.PostgreSql.XUnitTest.Entity.Options;
 
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model
@@ -50,9 +50,6 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 		public NpgsqlPath? Path_type { get; set; }
 		public NpgsqlPoint? Point_type { get; set; }
 		public NpgsqlPolygon? Polygon_type { get; set; }
-		public short Serial2_type { get; set; }
-		public int Serial4_type { get; set; }
-		public long Serial8_type { get; set; }
 		public string Text_type { get; set; }
 		public TimeSpan? Time_type { get; set; }
 		public DateTime? Timestamp_type { get; set; }
@@ -68,6 +65,9 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 		public Info Composite_type { get; set; }
 		public BitArray Bit_length_type { get; set; }
 		public int[] Array_type { get; set; }
+		public short Serial2_type { get; set; }
+		public int Serial4_type { get; set; }
+		public long Serial8_type { get; set; }
 		public Guid[] Uuid_array_type { get; set; }
 		public string[] Varchar_array_type { get; set; }
 		#endregion

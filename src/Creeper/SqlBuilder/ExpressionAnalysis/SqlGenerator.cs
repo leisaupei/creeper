@@ -8,10 +8,10 @@ using Creeper.Generic;
 
 namespace Creeper.SqlBuilder.ExpressionAnalysis
 {
-	/// <summary>
-	/// lambda表达式转为where条件sql
-	/// </summary>
-	public class SqlGenerator
+    /// <summary>
+    /// lambda表达式转为where条件sql
+    /// </summary>
+    public class SqlGenerator
     {
         #region Test
         public static string GetWhereByLambda<T>(Expression<Func<T, bool>> predicate, DataBaseKind databaseType)
@@ -118,7 +118,6 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
         /// <summary>
         /// 获取selector
         /// </summary>
-        /// <typeparam name="TModel"></typeparam>
         /// <param name="selector"></param>
         /// <param name="databaseType"></param>
         /// <returns></returns>
@@ -133,14 +132,12 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
         /// <summary>
         /// 获取没有别名的selector
         /// </summary>
-        /// <typeparam name="TModel"></typeparam>
-        /// <typeparam name="TKey"></typeparam>
         /// <param name="selector"></param>
-        /// <param name="databaseType"></param>
+        /// <param name="dataBaseKind"></param>
         /// <returns></returns>
-        public static string GetSelectorWithoutAlias(Expression selector, DataBaseKind databaseType)
+        public static string GetSelectorWithoutAlias(Expression selector, DataBaseKind dataBaseKind)
         {
-            var key = GetSelector(selector, databaseType);
+            var key = GetSelector(selector, dataBaseKind);
             var keyArray = key.Split('.');
             return keyArray.Length > 1 ? keyArray[1] : key;
         }

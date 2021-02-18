@@ -1,13 +1,16 @@
+using System.ComponentModel;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 using Xunit.Extensions.Ordering;
+using System.Data.Common;
+using Npgsql;
 
 namespace Creeper.PostgreSql.XUnitTest
 {
 	[Order(5)]
-	public class Delete : BaseTest
+	public class Delete //: BaseTest
 	{
 		[Fact]
 		public void Union()
@@ -33,9 +36,34 @@ namespace Creeper.PostgreSql.XUnitTest
 			var xx2 = typeof(IList).IsInstanceOfType(list);
 			var xx3 = typeof(IList).IsInstanceOfType(arr);
 
+			var testInt = System.Text.Json.JsonSerializer.Serialize(6);
+
+			var testDeInt = (long)System.Text.Json.JsonSerializer.Deserialize("6", typeof(long));
+
+
+			var testGuid = System.Text.Json.JsonSerializer.Serialize(Guid.Empty);
+			var testString = System.Text.Json.JsonSerializer.Deserialize("\"7567\"", typeof(string));
+
+			var testDeGuid = (Guid)System.Text.Json.JsonSerializer.Deserialize(testGuid, typeof(Guid));
+
+			var objValue = Guid.Parse("81d58ab2-4fc6-425a-bc51-d1d73bf9f4b1");
+			var returnType = typeof(Guid);
+			Guid result = Guid.Empty;
+			var converter = TypeDescriptor.GetConverter(returnType);
+			if (converter.CanConvertFrom(objValue.GetType()))
+			{
+				result = (Guid)converter.ConvertFrom(objValue);
+			}
+			else
+			{
+				result = (Guid)Convert.ChangeType(objValue, returnType);
+			}
+			var hash = new Hashtable();
+			var value = hash["a"];
+			hash.Remove("x");
 
 		}
-	
+
 
 	}
 }

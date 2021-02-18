@@ -13,7 +13,6 @@ namespace Creeper.Driver
 		/// <summary>
 		/// 开启事务
 		/// </summary>
-		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		ICreeperDbExecute BeginTransaction();
 

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Creeper.Extensions
 {
@@ -43,11 +45,22 @@ namespace Creeper.Extensions
 		/// <summary>
 		/// 获取表达式是否可用的集合类型
 		/// </summary>
-		/// <param name="expression"></param>
+		/// <param name="type"></param>
 		/// <returns></returns>
 		public static bool IsImplementation<T>(this Type type)
 		{
 			return typeof(T).IsAssignableFrom(type);
+		}
+		/// <summary>
+		/// md5校验
+		/// </summary>
+		/// <param name="content"></param>
+		/// <returns></returns>
+		public static string GetMD5String(this string content)
+		{
+			byte[] result = Encoding.UTF8.GetBytes(content);
+			using (MD5 md5 = MD5.Create())
+				return BitConverter.ToString(md5.ComputeHash(result)).Replace("-", "").ToLower();
 		}
 
 	}

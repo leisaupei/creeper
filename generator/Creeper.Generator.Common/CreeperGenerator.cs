@@ -24,7 +24,7 @@ namespace Creeper.Generator.Common
 			_generatorProviderFactory = generatorProviderFactory;
 			_cfg = cfg;
 			ModelSuffix = _cfg["ModelSuffix"];
-			Namespace = _cfg["Namespace"];
+			Namespace = _cfg["ModelNamespace"];
 			DbStandardSuffix = _cfg["DbStandardSuffix"];
 			WriteAuthorHeader = AuthorWriter;
 		}

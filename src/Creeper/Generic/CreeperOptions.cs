@@ -51,10 +51,10 @@ namespace Creeper.Generic
 				CreeperDbTypeConverters.Add(convert);
 		}
 
-		//public void UseCache<TDbCache>() where TDbCache : ICreeperDbCache
-		//{
-		//	DbCacheType = typeof(TDbCache);
-		//}
+		public void UseCache<TDbCache>() where TDbCache : ICreeperDbCache
+		{
+			DbCacheType = typeof(TDbCache);
+		}
 		public void RegisterExtension(ICreeperOptionsExtension extension)
 		{
 			if (extension == null)
