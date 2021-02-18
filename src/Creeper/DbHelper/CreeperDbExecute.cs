@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
-using Newtonsoft.Json;
 using Creeper.Driver;
 using Creeper.Generic;
 
@@ -20,6 +19,8 @@ namespace Creeper.DbHelper
 	{
 		public ICreeperDbConnectionOption ConnectionOptions { get; }
 
+		public bool InTransaction => _trans != null;
+
 		/// <summary>
 		/// 事务池
 		/// </summary>
@@ -28,7 +29,7 @@ namespace Creeper.DbHelper
 		/// <summary>
 		/// constructer
 		/// </summary>
-		/// <param name="conn"></param>
+		/// <param name="connectionOptions"></param>
 		public CreeperDbExecute(ICreeperDbConnectionOption connectionOptions)
 		{
 			if (string.IsNullOrEmpty(connectionOptions.ConnectionString))
@@ -448,19 +449,16 @@ namespace Creeper.DbHelper
 		/// </summary>
 		private void ThrowException(DbCommand cmd, Exception ex)
 		{
-			var ht = new Hashtable();
+			StringBuilder msg = new StringBuilder();
+			msg.AppendLine($"{ConnectionOptions.DbName}数据库执行出错：===== ");
+			msg.AppendLine("ConnectionString=" + cmd?.Connection?.ConnectionString);
+			msg.AppendLine("CmdText=" + cmd?.CommandText);
+			msg.AppendLine("Parameters:");
 			if (cmd?.Parameters != null)
 				foreach (DbParameter item in cmd?.Parameters)
-					ht[item.ParameterName] = item.Value;
+					msg.AppendLine(item.ParameterName + "=" + (typeof(IEnumerable).IsAssignableFrom(item.Value.GetType()) ? string.Join(",", item.Value as IEnumerable) : item.ToString()));
 
-			string msg = string.Format("{1}数据库执行出错：===== {0}", JsonConvert.SerializeObject(new
-			{
-				ConnectionString = cmd?.Connection?.ConnectionString,
-				CmdText = cmd?.CommandText,
-				Parameters = ht
-			}), ConnectionOptions.DbName);
-
-			throw new CreeperSqlExecuteException(msg, ex);
+			throw new CreeperSqlExecuteException(msg.ToString(), ex);
 		}
 
 		private async ValueTask CloseConnectionAsync(bool async, DbConnection connection)

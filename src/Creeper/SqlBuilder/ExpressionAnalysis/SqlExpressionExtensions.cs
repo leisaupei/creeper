@@ -58,7 +58,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <summary>
 		/// 获取是否字段加双引号
 		/// </summary>
-		/// <param name="databaseType"></param>
+		/// <param name="dataBaseKind"></param>
 		/// <returns></returns>
 		public static bool GetWithQuotationMarks(this DataBaseKind dataBaseKind)
 			=> dataBaseKind switch
@@ -80,7 +80,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <summary>
 		/// 空与非空运算符转换
 		/// </summary>
-		/// <param name="opr"></param>
+		/// <param name="type"></param>
 		/// <returns></returns>
 		public static string NullableOperatorCast(this ExpressionType type)
 			=> type == ExpressionType.Equal
@@ -90,7 +90,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <summary>
 		/// 空与非空运算符转换
 		/// </summary>
-		/// <param name="opr"></param>
+		/// <param name="type"></param>
 		/// <returns></returns>
 		public static bool IsBracketsExpressionType(this ExpressionType type)
 			=> type == ExpressionType.AndAlso || type == ExpressionType.OrElse;
@@ -98,7 +98,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <summary>
 		/// 获得like语句链接符
 		/// </summary>
-		/// <param name="databaseType"></param>
+		/// <param name="dataBaseKind"></param>
 		/// <returns></returns>
 		public static string GetStrConnectWords(this DataBaseKind dataBaseKind)
 			=> dataBaseKind switch
@@ -110,7 +110,8 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <summary>
 		/// 转换数据库主从
 		/// </summary>
-		/// <param name="databaseType"></param>
+		/// <param name="dataBaseType"></param>
+		/// <param name="dbName"></param>
 		/// <returns></returns>
 		public static string ChangeDataBaseKind(this DataBaseType dataBaseType, string dbName)
 		{
@@ -204,6 +205,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// 把表达式转换为常量表达式
 		/// </summary>
 		/// <param name="expression"></param>
+        /// <param name="constantType">常量表达式的类型</param>
 		/// <returns></returns>
 		public static ConstantExpression GetConstantFromExression(this Expression expression, Type constantType)
 		{

@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Creeper.SqlServer\Creeper.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\Creeper\Creeper.csproj" />
   </ItemGroup>
 
 </Project>

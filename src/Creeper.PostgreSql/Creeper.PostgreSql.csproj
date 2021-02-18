@@ -11,21 +11,24 @@
     <PackageReleaseNotes>升级creeper版本</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <PackageLicenseFile></PackageLicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>leisaupei</Copyright>
-    <FileVersion>1.0.1.0</FileVersion>
+    <FileVersion>1.0.2.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.1\Creeper.PostgreSql.xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="5.0.1.1" />
-    <PackageReference Include="Npgsql.Json.NET" Version="5.0.1.1" />
-    <PackageReference Include="Npgsql.LegacyPostgis" Version="5.0.1.1" />
-    <PackageReference Include="Creeper" Version="1.0.1" />
+    <PackageReference Include="Npgsql" Version="5.0.3" />
+    <PackageReference Include="Npgsql.Json.NET" Version="5.0.3" />
+    <PackageReference Include="Npgsql.LegacyPostgis" Version="5.0.3" />
   </ItemGroup>
-  
+  <ItemGroup>
+    <ProjectReference Include="..\Creeper\Creeper.csproj" />
+  </ItemGroup>
+
 </Project>

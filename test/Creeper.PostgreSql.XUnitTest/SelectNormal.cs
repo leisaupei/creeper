@@ -63,11 +63,17 @@ namespace Creeper.PostgreSql.XUnitTest
 		}
 
 		[Fact, Order(6)]
-		public void GetItemByUniqueKey()
+		public void SelectByDbCache()
 		{
-			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ToOne();
-
-			Assert.Equal(StuNo1, info.Stu_no);
+			Stopwatch sw = Stopwatch.StartNew();
+			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToOne();
+	
+			var a = sw.ElapsedMilliseconds.ToString();
+			info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToOne();
+			sw.Stop();
+			var b = sw.ElapsedMilliseconds.ToString();
+			//var key = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToScalar(a => a.Id);
+			//Assert.Equal(StuNo1, info.Stu_no);
 		}
 
 		[Fact, Order(7)]

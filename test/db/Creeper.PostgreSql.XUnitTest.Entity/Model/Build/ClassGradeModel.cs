@@ -1,6 +1,6 @@
-﻿/* ##########################################################
- * #   此文件由 https://github.com/leisaupei/creeper 生成    #
- * ##########################################################
+﻿/* ################################################################################
+ * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
+ * ################################################################################
  */
 using Creeper.Driver;
 using System;
@@ -14,7 +14,7 @@ using System.Xml;
 using System.Net;
 using System.Threading.Tasks;
 using System.Threading;
-using Creeper.Generic;
+using Creeper.Attributes;
 using Creeper.PostgreSql.XUnitTest.Entity.Options;
 
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model

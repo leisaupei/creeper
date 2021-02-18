@@ -1,6 +1,6 @@
-﻿using Creeper.Driver;
+﻿using Creeper.Attributes;
+using Creeper.Driver;
 using Creeper.Extensions;
-using Creeper.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,8 +34,10 @@ namespace Creeper.DbHelper
 
 		static Dictionary<string, string[]> _typeFieldsDict;
 		static Dictionary<string, string[]> _typeFieldsDictNoSymbol;
+		static Dictionary<string, string[]> _typePrimaryKey;
 
 		const string SystemLoadSuffix = ".SystemLoad";
+
 		/// <summary>
 		/// 根据实体类获取所有字段数组, 有双引号
 		/// </summary>
@@ -88,15 +90,20 @@ namespace Creeper.DbHelper
 			if (!t.GetInterfaces().Any(f => f == typeof(ICreeperDbModel))) return;
 			_typeFieldsDict = new Dictionary<string, string[]>();
 			_typeFieldsDictNoSymbol = new Dictionary<string, string[]>();
+			_typePrimaryKey = new Dictionary<string, string[]>();
 			var types = t.Assembly.GetTypes().Where(f => !string.IsNullOrEmpty(f.Namespace) && f.Namespace.Contains(".Model") && f.GetCustomAttribute<DbTableAttribute>() != null);
 			foreach (var type in types)
 			{
 				var key = string.Concat(type.FullName, SystemLoadSuffix);
-				var (symbol, noSymbol) = GetAllFields("", type);
+				var fieldInfo = GetAllFields("", type);
 				if (!_typeFieldsDict.ContainsKey(key))
-					_typeFieldsDict[key] = symbol;
+					_typeFieldsDict[key] = fieldInfo.SymbolFields.ToArray();
+
 				if (!_typeFieldsDictNoSymbol.ContainsKey(key))
-					_typeFieldsDictNoSymbol[key] = noSymbol;
+					_typeFieldsDictNoSymbol[key] = fieldInfo.NoSymbolFields.ToArray();
+
+				if (!_typePrimaryKey.ContainsKey(key))
+					_typePrimaryKey[key] = fieldInfo.PkFields.ToArray();
 			}
 		}
 
@@ -111,16 +118,19 @@ namespace Creeper.DbHelper
 		/// <param name="type"></param>
 		/// <param name="alias"></param>
 		/// <returns>(包含双引号,用于SQL语句,不包含双引号,用于反射)</returns>
-		static (string[], string[]) GetAllFields(string alias, Type type)
+		static TypeFieldsInfo GetAllFields(string alias, Type type)
 		{
-			List<string> list = new List<string>(), listNoSymbol = new List<string>();
+			var fieldInfo = new TypeFieldsInfo();
 			alias = !string.IsNullOrEmpty(alias) ? alias + "." : "";
 			GetAllFields(p =>
 			{
-				list.Add(alias + '"' + p.Name.ToLower() + '"');
-				listNoSymbol.Add(alias + p.Name.ToLower());
+				fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
+				fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
+
+				if (p.GetCustomAttribute<PrimaryKeyAttribute>() != null)
+					fieldInfo.PkFields.Add(p.Name.ToLower());
 			}, type);
-			return (list.ToArray(), listNoSymbol.ToArray());
+			return fieldInfo;
 		}
 
 		/// <summary>
@@ -132,6 +142,7 @@ namespace Creeper.DbHelper
 		{
 			return GetDbTable(typeof(T));
 		}
+
 		/// <summary>
 		/// 获取Mapping特性
 		/// </summary>
@@ -200,6 +211,12 @@ namespace Creeper.DbHelper
 		{
 			var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 			Array.ForEach(properties, action);
+		}
+		internal class TypeFieldsInfo
+		{
+			public List<string> SymbolFields { get; set; } = new List<string>();
+			public List<string> NoSymbolFields { get; set; } = new List<string>();
+			public List<string> PkFields { get; set; } = new List<string>();
 		}
 	}
 }

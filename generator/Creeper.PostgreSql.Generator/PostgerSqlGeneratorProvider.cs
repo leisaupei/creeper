@@ -97,7 +97,7 @@ namespace Creeper.PostgreSql.Generator
 			var sql = $@"
 				SELECT tablename AS name, 'table' AS type, CAST(obj_description(b.oid,'pg_class') AS VARCHAR) AS description
 				FROM pg_tables a  
-				LEFT JOIN pg_class b on a.tablename = b.relname AND b.relkind = 'r' 
+				LEFT JOIN pg_class b on a.tablename = b.relname AND b.relkind in ('r','p') 
 				INNER JOIN pg_namespace c on c.oid = b.relnamespace AND c.nspname = a.schemaname
 				WHERE tablename NOT IN ({Types.ConvertArrayToSql(_postgresExcepts.Global.Tables)})
 				AND schemaname = '{schemaName}'
