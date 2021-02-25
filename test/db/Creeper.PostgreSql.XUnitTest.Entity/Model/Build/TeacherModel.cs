@@ -20,7 +20,7 @@ using Creeper.PostgreSql.XUnitTest.Entity.Options;
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 {
 
-	[DbTable(@"""public"".""teacher""", typeof(DbMain))]
+	[CreeperDbTable(@"""public"".""teacher""", typeof(DbMain))]
 	public partial class TeacherModel : ICreeperDbModel
 	{
 		#region Properties
@@ -30,7 +30,7 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 		public string Teacher_no { get; set; }
 		public Guid People_id { get; set; }
 		public DateTime Create_time { get; set; }
-		[PrimaryKey] public Guid Id { get; set; }
+		[CreeperPrimaryKey] public Guid Id { get; set; }
 		#endregion
 
 	}

@@ -6,10 +6,9 @@ namespace Creeper.Attributes
 	/// 数据库表特性
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class, Inherited = true)]
-	public class DbTableAttribute : Attribute
+	public class CreeperDbTableAttribute : Attribute
 	{
 		private readonly Type _dbName;
-
 		/// <summary>
 		/// 表名
 		/// </summary>
@@ -21,7 +20,7 @@ namespace Creeper.Attributes
 		/// </summary>
 		/// <param name="tableName">表名</param>
 		/// <param name="dbName"></param>
-		public DbTableAttribute(string tableName, Type dbName)
+		public CreeperDbTableAttribute(string tableName, Type dbName)
 		{
 			TableName = tableName;
 			_dbName = dbName;

@@ -20,11 +20,11 @@ using Creeper.PostgreSql.XUnitTest.Entity.Options;
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 {
 
-	[DbTable(@"""class"".""grade""", typeof(DbMain))]
+	[CreeperDbTable(@"""class"".""grade""", typeof(DbMain))]
 	public partial class ClassGradeModel : ICreeperDbModel
 	{
 		#region Properties
-		[PrimaryKey] public Guid Id { get; set; }
+		[CreeperPrimaryKey] public Guid Id { get; set; }
 		/// <summary>
 		/// 班级名称
 		/// </summary>

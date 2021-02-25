@@ -8,14 +8,14 @@
     <Description>Creeper orm</Description>
     <PackageProjectUrl>https://github.com/leisaupei/creeper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
-    <PackageReleaseNotes>优化代码, 新增ToOne/ToScalar自定义一级缓存</PackageReleaseNotes>
+    <PackageReleaseNotes>新增数据库Model忽略特性</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <PackageLicenseFile></PackageLicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>leisaupei</Copyright>
-    <FileVersion>1.0.2.0</FileVersion>
+    <FileVersion>1.0.3.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

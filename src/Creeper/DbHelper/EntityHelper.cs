@@ -91,7 +91,7 @@ namespace Creeper.DbHelper
 			_typeFieldsDict = new Dictionary<string, string[]>();
 			_typeFieldsDictNoSymbol = new Dictionary<string, string[]>();
 			_typePrimaryKey = new Dictionary<string, string[]>();
-			var types = t.Assembly.GetTypes().Where(f => !string.IsNullOrEmpty(f.Namespace) && f.Namespace.Contains(".Model") && f.GetCustomAttribute<DbTableAttribute>() != null);
+			var types = t.Assembly.GetTypes().Where(f => !string.IsNullOrEmpty(f.Namespace) && f.Namespace.Contains(".Model") && f.GetCustomAttribute<CreeperDbTableAttribute>() != null);
 			foreach (var type in types)
 			{
 				var key = string.Concat(type.FullName, SystemLoadSuffix);
@@ -124,10 +124,12 @@ namespace Creeper.DbHelper
 			alias = !string.IsNullOrEmpty(alias) ? alias + "." : "";
 			GetAllFields(p =>
 			{
-				fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
-				fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
-
-				if (p.GetCustomAttribute<PrimaryKeyAttribute>() != null)
+				if (p.GetCustomAttribute<CreeperIgnoreAttribute>() == null)
+				{
+					fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
+					fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
+				}
+				if (p.GetCustomAttribute<CreeperPrimaryKeyAttribute>() != null)
 					fieldInfo.PkFields.Add(p.Name.ToLower());
 			}, type);
 			return fieldInfo;
@@ -138,7 +140,7 @@ namespace Creeper.DbHelper
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
-		public static DbTableAttribute GetDbTable<T>() where T : ICreeperDbModel
+		public static CreeperDbTableAttribute GetDbTable<T>() where T : ICreeperDbModel
 		{
 			return GetDbTable(typeof(T));
 		}
@@ -147,7 +149,7 @@ namespace Creeper.DbHelper
 		/// 获取Mapping特性
 		/// </summary>
 		/// <returns></returns>
-		public static DbTableAttribute GetDbTable(Type type) => type.GetCustomAttribute<DbTableAttribute>() ?? throw new ArgumentNullException(nameof(DbTableAttribute));
+		public static CreeperDbTableAttribute GetDbTable(Type type) => type.GetCustomAttribute<CreeperDbTableAttribute>() ?? throw new ArgumentNullException(nameof(CreeperDbTableAttribute));
 
 		/// <summary>
 		/// 获取当前类字段的字符串, 包含双引号
