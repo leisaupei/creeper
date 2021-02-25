@@ -33,7 +33,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public InsertBuilder<TModel> Set(TModel model)
 		{
-			EntityHelper.GetAllFields<TModel>(p => Set(string.Concat("\"", p.Name.ToLower(), "\""), p.GetValue(model)));
+			EntityHelper.GetAllFields<TModel>(p => Set(string.Concat('"', p.Name.ToLower(), '"'), p.GetValue(model)));
 			return this;
 		}
 
