@@ -124,11 +124,9 @@ namespace Creeper.DbHelper
 			alias = !string.IsNullOrEmpty(alias) ? alias + "." : "";
 			GetAllFields(p =>
 			{
-				if (p.GetCustomAttribute<CreeperIgnoreAttribute>() == null)
-				{
-					fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
-					fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
-				}
+				fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
+				fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
+
 				if (p.GetCustomAttribute<CreeperPrimaryKeyAttribute>() != null)
 					fieldInfo.PkFields.Add(p.Name.ToLower());
 			}, type);
@@ -181,7 +179,8 @@ namespace Creeper.DbHelper
 		public static string GetModelTypeFieldsStringNoSymbol(string alias, Type type)
 		{
 			InitStaticTypesFields(type);
-			return string.Join(", ", _typeFieldsDictNoSymbol[string.Concat(type.FullName, SystemLoadSuffix)].Select(f => $"{alias}.{f}"));
+			alias = string.IsNullOrEmpty(alias) ? null : alias + ".";
+			return string.Join(", ", _typeFieldsDictNoSymbol[string.Concat(type.FullName, SystemLoadSuffix)].Select(f => $"{alias}{f}"));
 		}
 
 		/// <summary>
@@ -211,8 +210,9 @@ namespace Creeper.DbHelper
 		/// <param name="type"></param>
 		static void GetAllFields(Action<PropertyInfo> action, Type type)
 		{
-			var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-			Array.ForEach(properties, action);
+			var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.GetCustomAttribute<CreeperIgnoreAttribute>() == null);
+			foreach (var p in properties)
+				action?.Invoke(p);
 		}
 		internal class TypeFieldsInfo
 		{

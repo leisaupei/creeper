@@ -264,7 +264,7 @@ _table.Name);
 			{
 				var pkAttr = string.Empty;
 				if (_pkList.Any(a => a.Field == item.Field))
-					pkAttr = "[CrepperPrimaryKey] ";
+					pkAttr = "[CreeperPrimaryKey] ";
 				if (Types.NotCreateModelFieldDbType(item.DbType, item.Typcategory))
 				{
 					WriteComment(item.Comment, 2);
