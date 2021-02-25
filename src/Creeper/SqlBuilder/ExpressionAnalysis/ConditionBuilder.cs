@@ -331,6 +331,83 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			_conditionParts.Clear();
 			_conditionParts.Push(connect);
 		}
-		
+		#region 其他
+		//private static string BinarExpressionProvider(Expression left, Expression right, ExpressionType type)
+		//{
+		//	string sb = "(";
+		//	//先处理左边
+		//	sb += ExpressionRouter(left);
+
+		//	sb += type.OperatorCast();
+
+		//	//再处理右边
+		//	var tmpStr = ExpressionRouter(right);
+
+		//	if (tmpStr == "null")
+		//	{
+		//		if (sb.EndsWith(" ="))
+		//			sb = sb[0..^1] + " IS NULL";
+		//		else if (sb.EndsWith("<>"))
+		//			sb = sb[0..^2] + " IS NOT NULL";
+		//	}
+		//	else
+		//		sb += tmpStr;
+		//	return sb += ")";
+		//}
+
+		//private static string ExpressionRouter(Expression expression)
+		//{
+		//	switch (expression)
+		//	{
+		//		case BinaryExpression be:
+		//			return BinarExpressionProvider(be.Left, be.Right, be.NodeType);
+
+		//		case MemberExpression me:
+		//			return me.Member.Name;
+
+		//		case NewArrayExpression ae:
+		//			StringBuilder tmpstr = new();
+		//			foreach (var ex in ae.Expressions)
+		//			{
+		//				tmpstr.Append(ExpressionRouter(ex));
+		//				tmpstr.Append(',');
+		//			}
+		//			return tmpstr.ToString(0, tmpstr.Length - 1);
+
+		//		case MethodCallExpression mce:
+		//			switch (mce.Method.Name)
+		//			{
+		//				case "Like": return string.Format("({0} like {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+
+		//				case "NotLike": return string.Format("({0} Not like {1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+
+		//				case "In": return string.Format("{0} In ({1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+
+		//				case "NotIn": return string.Format("{0} Not In ({1})", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+
+		//				case "StartWith": return string.Format("{0} like '{1}%'", ExpressionRouter(mce.Arguments[0]), ExpressionRouter(mce.Arguments[1]));
+		//			}
+		//			break;
+
+		//		case ConstantExpression ce:
+
+		//			if (ce.Value == null)
+		//				return "null";
+
+		//			else if (ce.Value is ValueType)
+		//				return ce.Value.ToString();
+
+		//			else if (ce.Value is string || ce.Value is DateTime || ce.Value is char)
+		//				return string.Format("'{0}'", ce.Value.ToString());
+		//			break;
+
+		//		case UnaryExpression ue:
+		//			return ExpressionRouter(ue.Operand);
+		//	}
+		//	return null;
+		//}
+
+
+		#endregion
 	}
 }

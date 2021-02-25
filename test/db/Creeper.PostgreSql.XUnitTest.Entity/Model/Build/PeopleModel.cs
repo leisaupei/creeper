@@ -20,11 +20,11 @@ using Creeper.PostgreSql.XUnitTest.Entity.Options;
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 {
 
-	[DbTable(@"""public"".""people""", typeof(DbMain))]
+	[CreeperDbTable(@"""public"".""people""", typeof(DbMain))]
 	public partial class PeopleModel : ICreeperDbModel
 	{
 		#region Properties
-		[PrimaryKey] public Guid Id { get; set; }
+		[CreeperPrimaryKey] public Guid Id { get; set; }
 		/// <summary>
 		/// 年龄
 		/// </summary>

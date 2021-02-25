@@ -244,7 +244,7 @@ using {3}.{0}.Options;
 namespace {3}.{0}.{1}{2}
 {{
 {4}
-	[DbTable(@""""""{6}"""".""""{9}""""""{8})]
+	[CreeperDbTable(@""""""{6}"""".""""{9}""""""{8})]
 	public partial class {7} : ICreeperDbModel
 	{{
 		#region Properties
@@ -264,7 +264,7 @@ _table.Name);
 			{
 				var pkAttr = string.Empty;
 				if (_pkList.Any(a => a.Field == item.Field))
-					pkAttr = "[PrimaryKey] ";
+					pkAttr = "[CrepperPrimaryKey] ";
 				if (Types.NotCreateModelFieldDbType(item.DbType, item.Typcategory))
 				{
 					WriteComment(item.Comment, 2);

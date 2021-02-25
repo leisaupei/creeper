@@ -20,11 +20,11 @@ using Creeper.PostgreSql.XUnitTest.Entity.Options;
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 {
 
-	[DbTable(@"""public"".""type_test""", typeof(DbMain))]
+	[CreeperDbTable(@"""public"".""type_test""", typeof(DbMain))]
 	public partial class TypeTestModel : ICreeperDbModel
 	{
 		#region Properties
-		[PrimaryKey] public Guid Id { get; set; }
+		[CreeperPrimaryKey] public Guid Id { get; set; }
 		public BitArray Bit_type { get; set; }
 		public bool? Bool_type { get; set; }
 		public NpgsqlBox? Box_type { get; set; }

@@ -2,13 +2,12 @@
 
 namespace Creeper.Attributes
 {
-
 	/// <summary>
-	/// 主键特性
+	/// 排除字段
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property, Inherited = true)]
-	public class PrimaryKeyAttribute : Attribute
+	public class CreeperIgnoreAttribute : Attribute
 	{
-		public PrimaryKeyAttribute() { }
+		public CreeperIgnoreAttribute() { }
 	}
 }
