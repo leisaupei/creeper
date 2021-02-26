@@ -397,7 +397,7 @@ namespace Creeper.SqlBuilder
         }
         private async Task<T> GetCacheResultAsync<T>(Func<Task<T>> fn)
         {
-            if (UseCacheType == DbCacheType.None) return default;
+            if (UseCacheType == DbCacheType.None) return await fn.Invoke();
             var key = string.Concat(_cachePrefix, ToString().GetMD5String());
             if (await CreeperDbContext.DbCache.ExistsAsync(key))
                 return (T)await CreeperDbContext.DbCache.GetAsync(key, typeof(T));
