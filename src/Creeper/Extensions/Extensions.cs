@@ -43,7 +43,7 @@ namespace Creeper.Extensions
 		public static bool IsNullOrDBNull(this object obj) => obj is DBNull || obj == null;
 
 		/// <summary>
-		/// 获取表达式是否可用的集合类型
+		/// 判断type是否继承typeof(T)
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>

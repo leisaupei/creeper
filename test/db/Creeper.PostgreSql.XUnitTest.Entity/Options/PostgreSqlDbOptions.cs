@@ -29,7 +29,7 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Options
 		#region Main
 		public class MainPostgreSqlDbOption : BasePostgreSqlDbOption<DbMain, DbSecondary>
 		{
-			public MainPostgreSqlDbOption(string mainConnectionString, string[] secondaryConnectionStrings) : base(mainConnectionString, secondaryConnectionStrings)  { }
+			public MainPostgreSqlDbOption(string mainConnectionString, string[] secondaryConnectionStrings) : base(mainConnectionString, secondaryConnectionStrings) { }
 			public override DbConnectionOptions Options => new DbConnectionOptions()
 			{
 				MapAction = conn =>

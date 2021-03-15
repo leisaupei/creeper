@@ -25,21 +25,21 @@ namespace Creeper.PostgreSql.XUnitTest
 		}
 
 		[Fact, Order(1)]
-		public void ToOne()
+		public void FirstOrDefault()
 		{
-			var info = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).ToOne();
+			var info = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).By(Generic.DataBaseType.Secondary).FirstOrDefault();
 
 			Assert.Equal(StuPeopleId1, info.People_id);
 		}
 
 		[Fact, Order(4)]
-		public void ToOneT()
+		public void Frist()
 		{
-			var peopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).ToOne<Guid>("people_id");
-			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOne<ToOneTTestModel>("name,id");
+			var peopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).FirstOrDefault<Guid>("people_id");
+			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<ToOneTTestModel>("name,id");
 
-			var emptyNullablePeopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == Guid.Empty).ToOne<Guid?>("people_id");
-			var emptyPeopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == Guid.Empty).ToOne<Guid>("people_id");
+			var emptyNullablePeopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == Guid.Empty).FirstOrDefault<Guid?>("people_id");
+			var emptyPeopleId = _dbContext.Select<StudentModel>().Where(a => a.People_id == Guid.Empty).FirstOrDefault<Guid>("people_id");
 
 			Assert.IsType<ToOneTTestModel>(info);
 			Assert.Equal(StuPeopleId1, info.Id);
@@ -49,12 +49,12 @@ namespace Creeper.PostgreSql.XUnitTest
 		}
 
 		[Fact, Order(5)]
-		public void ToOneTuple()
+		public void FristTuple()
 		{
-			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOne<(Guid id, string name)>("id,name");
+			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<(Guid id, string name)>("id,name");
 			// if not found
-			var notFoundInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).ToOne<(Guid id, string name)>("id,name");
-			var notFoundNullableInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).ToOne<(Guid? id, string name)>("id,name");
+			var notFoundInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).FirstOrDefault<(Guid id, string name)>("id,name");
+			var notFoundNullableInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).FirstOrDefault<(Guid? id, string name)>("id,name");
 
 
 			Assert.Equal(StuPeopleId1, info.id);
@@ -66,10 +66,10 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void SelectByDbCache()
 		{
 			Stopwatch sw = Stopwatch.StartNew();
-			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToOne();
-	
+			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().FirstOrDefault();
+
 			var a = sw.ElapsedMilliseconds.ToString();
-			info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToOne();
+			info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().FirstOrDefault();
 			sw.Stop();
 			var b = sw.ElapsedMilliseconds.ToString();
 			//var key = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().ToScalar(a => a.Id);
@@ -89,9 +89,9 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void ToOneDictonary()
 		{
 			// all
-			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOne<Dictionary<string, object>>();
+			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<Dictionary<string, object>>();
 			// option
-			var info1 = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOne<Hashtable>("name,id");
+			var info1 = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<Hashtable>("name,id");
 			Assert.Equal(StuPeopleId1, Guid.Parse(info["id"].ToString()));
 			Assert.Equal(StuPeopleId1, Guid.Parse(info1["id"].ToString()));
 		}
@@ -132,13 +132,13 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void ToPipe()
 		{
 			object[] obj = _dbContext.GetExecute<DbSecondary>().ExecuteDataReaderPipe(new ISqlBuilder[] {
-				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).ToListPipe(),
-				_dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOnePipe<(Guid, string)>("id,name"),
-				_dbContext.Select<PeopleModel>().Where(a =>a.Id==StuPeopleId1).ToListPipe<(Guid, string)>("id,name"),
-				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).ToListPipe<Dictionary<string, object>>("name,id"),
-				_dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToOnePipe<ToOneTTestModel>("name,id"),
-				_dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).ToOnePipe<Guid>("people_id"),
-				_dbContext.Select<StudentModel>().LeftJoin<PeopleModel>((a,b) => a.People_id == b.Id, true).Where(a => a.People_id == StuPeopleId2).ToOneUnionPipe<PeopleModel>(),
+				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList(),
+				_dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).PipeFirstOrDefault<(Guid, string)>("id,name"),
+				_dbContext.Select<PeopleModel>().Where(a =>a.Id==StuPeopleId1).PipeToList<(Guid, string)>("id,name"),
+				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList<Dictionary<string, object>>("name,id"),
+				_dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).PipeFirstOrDefault<ToOneTTestModel>("name,id"),
+				_dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).PipeFirstOrDefault<Guid>("people_id"),
+				_dbContext.Select<StudentModel>().UnionLeftJoin<PeopleModel>((a,b) => a.People_id == b.Id).Where(a => a.People_id == StuPeopleId2).PipeUnionFirstOrDefault<PeopleModel>(),
 				 });
 			var info = obj[0].ToObjectArray().OfType<PeopleModel>();
 			var info1 = ((Guid, string))obj[1];
@@ -158,16 +158,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact, Order(13)]
 		public void Count()
 		{
-			Stopwatch stop = new Stopwatch();
-			stop.Start();
 			var count = _dbContext.Select<PeopleModel>().Count();
-			for (int i = 0; i < 1000; i++)
-			{
-				count = _dbContext.Select<PeopleModel>().Count();
-			}
-			stop.Stop();
-			_output.WriteLine(stop.ElapsedMilliseconds.ToString());
-			Assert.True(count >= 0);
 		}
 		[Fact, Order(14)]
 		public void Max()
@@ -184,23 +175,24 @@ namespace Creeper.PostgreSql.XUnitTest
 			Assert.True(minAge >= 0);
 		}
 		[Fact, Order(16), Description("the type of T must be same as the column's type")]
-		public void Avg()
+		public async void Avg()
 		{
+			var avgAge1 = await _dbContext.Select<PeopleModel>().FirstOrDefaultAsync<Guid>(a => a.Id);
 			var avgAge = _dbContext.Select<PeopleModel>().Avg<decimal>(a => a.Age);
 			Assert.True(avgAge >= 0);
 		}
 
-		[Fact, Order(17), Description("same usage as ToOne<T>(), but T is ValueType")]
-		public void ToScalar()
+		[Fact, Order(17), Description("same usage as FirstOrDefault<T>(), but T is ValueType")]
+		public void Scalar()
 		{
-			var id = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).ToScalar<Guid>("id");
+			var id = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<Guid>(a => a.Id);
 			Assert.Equal(StuPeopleId1, id);
 		}
 		[Fact, Order(18)]
 		public void OrderBy()
 		{
-			//var infos = _dbContext.Select<PeopleModel>() .InnerJoin<StudentModel>((a, b) => a.Id == b.People_id)
-			//	.OrderByDescing(f => f.Age).ToList();
+			var infos = _dbContext.Select<PeopleModel>().InnerJoin<StudentModel>((a, b) => a.Id == b.People_id)
+				.OrderByDescending(a => a.Age).ToList();
 		}
 		[Fact, Order(19)]
 		public void GroupBy()
@@ -228,36 +220,22 @@ namespace Creeper.PostgreSql.XUnitTest
 
 		}
 		[Fact, Order(24), Description("")]
-		public void ToUnion()
+		public void Union()
 		{
 			Stopwatch stop = new Stopwatch();
 			stop.Start();
-			var union0 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1, true).ToOneUnion<PeopleModel>();
+			var union0 = _dbContext.Select<StudentModel>().UnionInnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).UnionFirstOrDefault<PeopleModel>();
 
 			var a = stop.ElapsedMilliseconds;
-			var union1 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1, true).ToOneUnion<PeopleModel>();
+			var union1 = _dbContext.Select<StudentModel>().UnionInnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).UnionFirstOrDefault<PeopleModel>();
 			var b = stop.ElapsedMilliseconds;
-			var union2 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1, true).ToOneUnion<PeopleModel>();
+			var union2 = _dbContext.Select<StudentModel>().UnionInnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).UnionFirstOrDefault<PeopleModel>();
 			var c = stop.ElapsedMilliseconds;
 			stop.Stop();
 
 			_output.WriteLine(string.Concat(a, ",", b, ",", c));
 		}
-		[Fact, Order(25), Description("")]
-		public void ToUnionCompare()
-		{
-			Stopwatch stop = new Stopwatch();
-			stop.Start();
-			var union0 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).ToOne();
-			var a = stop.ElapsedMilliseconds;
-			var union1 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).ToOne();
-			var b = stop.ElapsedMilliseconds;
-			var union2 = _dbContext.Select<StudentModel>().InnerJoin<PeopleModel>((a, b) => a.People_id == b.Id && a.Stu_no == StuNo1).ToOne();
-			var c = stop.ElapsedMilliseconds;
-			stop.Stop();
 
-			_output.WriteLine(string.Concat(a, ",", b, ",", c));
-		}
 		[Fact, Order(16), Description("the type of T must be same as the column's type")]
 		public void Sum()
 		{

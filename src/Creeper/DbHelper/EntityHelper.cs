@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Creeper.DbHelper
 {
@@ -31,32 +32,45 @@ namespace Creeper.DbHelper
 			}
 		}
 
-
-		static Dictionary<string, string[]> _typeFieldsDict;
-		static Dictionary<string, string[]> _typeFieldsDictNoSymbol;
-		static Dictionary<string, string[]> _typePrimaryKey;
+		static IReadOnlyDictionary<string, TypeFieldsInfo> _typeFields;
 
 		const string SystemLoadSuffix = ".SystemLoad";
+		static readonly object _lock = new object();
 
 		/// <summary>
 		/// 根据实体类获取所有字段数组, 有双引号
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public static string[] GetFieldsFromStaticType(Type type)
+		public static string[] GetFieldsMark(Type type)
 		{
 			InitStaticTypesFields(type);
-			return _typeFieldsDict[string.Concat(type.FullName, SystemLoadSuffix)];
+			return _typeFields[string.Concat(type.FullName, SystemLoadSuffix)].Fields.Select(a => $"\"{a}\"").ToArray();
 		}
+		/// <summary>
+		/// 根据实体类获取所有主键
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		public static string[] GetPkFields(Type type)
+		{
+			InitStaticTypesFields(type);
+			return _typeFields[string.Concat(type.FullName, SystemLoadSuffix)].PkFields;
+		}
+		/// <summary>
+		/// 根据实体类获取所有主键
+		/// </summary>
+		/// <returns></returns>
+		public static string[] GetPkFields<T>() => GetPkFields(typeof(T));
 
 		/// <summary>
 		/// 根据实体类获取所有字段数组, 有双引号
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
-		static string[] GetFieldsFromStaticType<T>() where T : ICreeperDbModel
+		static string[] GetFieldsMark<T>() where T : ICreeperDbModel
 		{
-			return GetFieldsFromStaticType(typeof(T));
+			return GetFieldsMark(typeof(T));
 		}
 
 		/// <summary>
@@ -64,10 +78,10 @@ namespace Creeper.DbHelper
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public static string[] GetFieldsFromStaticTypeNoSymbol(Type type)
+		public static string[] GetFields(Type type)
 		{
 			InitStaticTypesFields(type);
-			return _typeFieldsDictNoSymbol[string.Concat(type.FullName, SystemLoadSuffix)];
+			return _typeFields[string.Concat(type.FullName, SystemLoadSuffix)].Fields;
 		}
 
 		/// <summary>
@@ -75,9 +89,9 @@ namespace Creeper.DbHelper
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
-		static string[] GetFieldsFromStaticTypeNoSymbol<T>() where T : ICreeperDbModel
+		static string[] GetFields<T>() where T : ICreeperDbModel
 		{
-			return GetFieldsFromStaticTypeNoSymbol(typeof(T));
+			return GetFields(typeof(T));
 		}
 
 		/// <summary>
@@ -86,24 +100,21 @@ namespace Creeper.DbHelper
 		/// <param name="t"></param>
 		static void InitStaticTypesFields(Type t)
 		{
-			if (_typeFieldsDict != null) return;
-			if (!t.GetInterfaces().Any(f => f == typeof(ICreeperDbModel))) return;
-			_typeFieldsDict = new Dictionary<string, string[]>();
-			_typeFieldsDictNoSymbol = new Dictionary<string, string[]>();
-			_typePrimaryKey = new Dictionary<string, string[]>();
-			var types = t.Assembly.GetTypes().Where(f => !string.IsNullOrEmpty(f.Namespace) && f.Namespace.Contains(".Model") && f.GetCustomAttribute<CreeperDbTableAttribute>() != null);
-			foreach (var type in types)
+			lock (_lock)
 			{
-				var key = string.Concat(type.FullName, SystemLoadSuffix);
-				var fieldInfo = GetAllFields("", type);
-				if (!_typeFieldsDict.ContainsKey(key))
-					_typeFieldsDict[key] = fieldInfo.SymbolFields.ToArray();
-
-				if (!_typeFieldsDictNoSymbol.ContainsKey(key))
-					_typeFieldsDictNoSymbol[key] = fieldInfo.NoSymbolFields.ToArray();
-
-				if (!_typePrimaryKey.ContainsKey(key))
-					_typePrimaryKey[key] = fieldInfo.PkFields.ToArray();
+				if (_typeFields != null) return;
+				if (!t.GetInterfaces().Contains(typeof(ICreeperDbModel))) return;
+				var types = t.Assembly.GetTypes().Where(f => f.Namespace?.Contains(".Model") == true
+					&& f.GetCustomAttribute<CreeperDbTableAttribute>() != null
+					&& t.GetInterfaces().Contains(typeof(ICreeperDbModel)));
+				var dict = new Dictionary<string, TypeFieldsInfo>();
+				foreach (var type in types)
+				{
+					var key = string.Concat(type.FullName, SystemLoadSuffix);
+					var fieldInfo = GetTypeFields(type);
+					dict[key] = fieldInfo;
+				}
+				_typeFields = dict;
 			}
 		}
 
@@ -118,18 +129,24 @@ namespace Creeper.DbHelper
 		/// <param name="type"></param>
 		/// <param name="alias"></param>
 		/// <returns>(包含双引号,用于SQL语句,不包含双引号,用于反射)</returns>
-		static TypeFieldsInfo GetAllFields(string alias, Type type)
+		static TypeFieldsInfo GetTypeFields(Type type)
 		{
-			var fieldInfo = new TypeFieldsInfo();
-			alias = !string.IsNullOrEmpty(alias) ? alias + "." : "";
+			var fields = new List<string>();
+			var pkFields = new List<string>();
 			GetAllFields(p =>
 			{
-				fieldInfo.SymbolFields.Add(alias + '"' + p.Name.ToLower() + '"');
-				fieldInfo.NoSymbolFields.Add(alias + p.Name.ToLower());
+				fields.Add(p.Name.ToLower());
 
-				if (p.GetCustomAttribute<CreeperPrimaryKeyAttribute>() != null)
-					fieldInfo.PkFields.Add(p.Name.ToLower());
+				var column = p.GetCustomAttribute<CreeperDbColumnAttribute>();
+				if (column != null && column.Primary)
+					pkFields.Add(p.Name.ToLower());
 			}, type);
+			var fieldInfo = new TypeFieldsInfo
+			{
+				Fields = fields.ToArray(),
+				PkFields = pkFields.ToArray(),
+			};
+
 			return fieldInfo;
 		}
 
@@ -155,10 +172,18 @@ namespace Creeper.DbHelper
 		/// <param name="type"></param>
 		/// <param name="alias"></param>
 		/// <returns></returns>
-		public static string GetModelTypeFieldsString(string alias, Type type)
+		public static string GetFieldsAlias(string alias, Type type)
 		{
 			InitStaticTypesFields(type);
-			return string.Join(", ", _typeFieldsDict[string.Concat(type.FullName, SystemLoadSuffix)].Select(f => $"{alias}.{f}"));
+			var fs = _typeFields[string.Concat(type.FullName, SystemLoadSuffix)].Fields;
+			var sb = new StringBuilder();
+			for (int i = 0; i < fs.Length; i++)
+			{
+				sb.Append($"{alias}.\"{fs[i]}\"");
+				if (i != fs.Length - 1)
+					sb.Append(",");
+			}
+			return sb.ToString();
 		}
 
 		/// <summary>
@@ -166,31 +191,9 @@ namespace Creeper.DbHelper
 		/// </summary>
 		/// <param name="alias"></param>
 		/// <returns></returns>
-		public static string GetModelTypeFieldsString<T>(string alias) where T : ICreeperDbModel
+		public static string GetFieldsAlias<T>(string alias) where T : ICreeperDbModel
 		{
-			return GetModelTypeFieldsString(alias, typeof(T));
-		}
-		/// <summary>
-		/// 获取当前类字段的字符串, 不包含双引号
-		/// </summary>
-		/// <param name="type"></param>
-		/// <param name="alias"></param>
-		/// <returns></returns>
-		public static string GetModelTypeFieldsStringNoSymbol(string alias, Type type)
-		{
-			InitStaticTypesFields(type);
-			alias = string.IsNullOrEmpty(alias) ? null : alias + ".";
-			return string.Join(", ", _typeFieldsDictNoSymbol[string.Concat(type.FullName, SystemLoadSuffix)].Select(f => $"{alias}{f}"));
-		}
-
-		/// <summary>
-		/// 获取当前类字段的字符串, 不包含双引号
-		/// </summary>
-		/// <param name="alias"></param>
-		/// <returns></returns>
-		public static string GetModelTypeFieldsStringNoSymbol<T>(string alias) where T : ICreeperDbModel
-		{
-			return GetModelTypeFieldsString(alias, typeof(T));
+			return GetFieldsAlias(alias, typeof(T));
 		}
 
 		/// <summary>
@@ -210,15 +213,28 @@ namespace Creeper.DbHelper
 		/// <param name="type"></param>
 		static void GetAllFields(Action<PropertyInfo> action, Type type)
 		{
-			var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.GetCustomAttribute<CreeperIgnoreAttribute>() == null);
+			IEnumerable<PropertyInfo> properties = GetProperties(type);
 			foreach (var p in properties)
 				action?.Invoke(p);
 		}
+
+		private static IEnumerable<PropertyInfo> GetProperties(Type type)
+		{
+			return type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p =>
+			{
+				var column = p.GetCustomAttribute<CreeperDbColumnAttribute>();
+				if (column == null) return true;
+				if (column.Ignore != IgnoreWhen.None)
+					return false;
+				return true;
+			});
+		}
+
 		internal class TypeFieldsInfo
 		{
-			public List<string> SymbolFields { get; set; } = new List<string>();
-			public List<string> NoSymbolFields { get; set; } = new List<string>();
-			public List<string> PkFields { get; set; } = new List<string>();
+			public string[] Fields { get; set; } = new string[0];
+			public string[] PkFields { get; set; } = new string[0];
+
 		}
 	}
 }

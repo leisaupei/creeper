@@ -224,13 +224,13 @@ namespace Creeper.DbHelper
 		#endregion
 
 		#region ExecuteDataReaderPipe
-		public Task<object[]> ExecuteDataReaderPipeAsync(IEnumerable<ISqlBuilder> builders, CommandType cmdType = CommandType.Text, CancellationToken cancellationToken = default)
-		=> ExecuteDataReaderPipeAsync(true, builders, cmdType, cancellationToken);
+		public Task<object[]> ExecuteDataReaderPipeAsync(IEnumerable<ISqlBuilder> builders, CancellationToken cancellationToken = default)
+		=> ExecuteDataReaderPipeAsync(true, builders, cancellationToken);
 
-		public object[] ExecuteDataReaderPipe(IEnumerable<ISqlBuilder> builders, CommandType cmdType = CommandType.Text)
-			=> ExecuteDataReaderPipeAsync(false, builders, cmdType, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+		public object[] ExecuteDataReaderPipe(IEnumerable<ISqlBuilder> builders)
+			=> ExecuteDataReaderPipeAsync(false, builders, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
 
-		private async Task<object[]> ExecuteDataReaderPipeAsync(bool async, IEnumerable<ISqlBuilder> builders, CommandType cmdType, CancellationToken cancellationToken)
+		private async Task<object[]> ExecuteDataReaderPipeAsync(bool async, IEnumerable<ISqlBuilder> builders, CancellationToken cancellationToken)
 		{
 			if (!builders?.Any() ?? true)
 				throw new ArgumentNullException(nameof(builders));
@@ -261,7 +261,7 @@ namespace Creeper.DbHelper
 
 						await dr.NextResultAsync();
 					}
-				}, cmdText.ToString(), cmdType, paras.ToArray(), true, cancellationToken);
+				}, cmdText.ToString(), CommandType.Text, paras.ToArray(), true, cancellationToken);
 			else
 				ExecuteDataReaderBaseAsync(dr =>
 				{
@@ -276,7 +276,7 @@ namespace Creeper.DbHelper
 
 						dr.NextResult();
 					}
-				}, cmdText.ToString(), cmdType, paras.ToArray(), false, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+				}, cmdText.ToString(), CommandType.Text, paras.ToArray(), false, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
 
 			static object GetResult(DbDataReader dr, ISqlBuilder item, List<object> list)
 			{
@@ -456,7 +456,7 @@ namespace Creeper.DbHelper
 			msg.AppendLine("Parameters:");
 			if (cmd?.Parameters != null)
 				foreach (DbParameter item in cmd?.Parameters)
-					msg.AppendLine(item.ParameterName + "=" + (typeof(IEnumerable).IsAssignableFrom(item.Value.GetType()) ? string.Join(",", item.Value as IEnumerable) : item.ToString()));
+					msg.AppendLine(item.ParameterName + "=" + (typeof(IEnumerable).IsAssignableFrom(item.Value.GetType()) ? string.Join(",", item.Value as IEnumerable) : item.Value.ToString()));
 
 			throw new CreeperSqlExecuteException(msg.ToString(), ex);
 		}

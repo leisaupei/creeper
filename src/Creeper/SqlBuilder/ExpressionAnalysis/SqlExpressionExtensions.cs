@@ -196,16 +196,33 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// </summary>
 		/// <param name="expression"></param>
 		/// <returns></returns>
-		public static bool IsIListImplementation(this Expression expression)
+		public static bool IsImplementation<T>(this Expression expression)
 		{
-			return typeof(IList).IsAssignableFrom(expression.Type);
+			return typeof(T).IsAssignableFrom(expression.Type);
+		}
+
+		/// <summary>
+		/// IEnumerable表达式转成类型为Array的表达式
+		/// </summary>
+		/// <param name="expression"></param>
+		/// <returns></returns>
+		public static Expression ToArrayExpression(this Expression expression)
+		{
+			if (!expression.IsImplementation<IList>()) //因为数据库不支持非IList类型的集合, 所以要转一下
+			{
+				var obj = expression.GetExpressionValue(); //获取表达式的值
+				obj = obj.GetType().GetMethod("ToArray").Invoke(obj, new object[0]); //调用ToArray()方法
+
+				expression = Expression.Constant(obj);
+			}
+			return expression;
 		}
 
 		/// <summary>
 		/// 把表达式转换为常量表达式
 		/// </summary>
 		/// <param name="expression"></param>
-        /// <param name="constantType">常量表达式的类型</param>
+		/// <param name="constantType">常量表达式的类型</param>
 		/// <returns></returns>
 		public static ConstantExpression GetConstantFromExression(this Expression expression, Type constantType)
 		{
@@ -220,5 +237,8 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <returns></returns>
 		public static object GetExpressionValue(this Expression expression)
 			=> Expression.Lambda(expression).Compile().DynamicInvoke();
+
+
+
 	}
 }

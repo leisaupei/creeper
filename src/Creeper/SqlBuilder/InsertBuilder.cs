@@ -1,10 +1,12 @@
-﻿using Creeper.DbHelper;
+﻿using Creeper.Attributes;
+using Creeper.DbHelper;
 using Creeper.Driver;
 using Creeper.Generic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +35,32 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public InsertBuilder<TModel> Set(TModel model)
 		{
-			EntityHelper.GetAllFields<TModel>(p => Set(string.Concat('"', p.Name.ToLower(), '"'), p.GetValue(model)));
+			EntityHelper.GetAllFields<TModel>(p =>
+			{
+				var name = string.Concat('"', p.Name.ToLower(), '"');
+				var value = p.GetValue(model);
+				var column = p.GetCustomAttribute<CreeperDbColumnAttribute>();
+				if (column != null)
+				{
+					var def = Activator.CreateInstance(p.PropertyType);
+					//如果自增字段而且没有赋值, 那么忽略此字段
+					if (column.Identity && value.ToString() == def.ToString()) return;
+
+					//如果是Guid主键而且没有赋值, 那么生成一个值
+					if (column.Primary && value is Guid g && g == default) value = Guid.NewGuid();
+				}
+
+				if (name == "\"create_time\"")
+				{
+					//不可空datetime类型赋值本地当前时间
+					if (value is DateTime d && d == default)
+						value = DateTime.Now;
+					//不可空long类型时间戳赋值本地当前时间毫秒时间戳
+					else if (value is long l && l == default)
+						value = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+				}
+				Set(name, value);
+			});
 			return this;
 		}
 
@@ -115,30 +142,30 @@ namespace Creeper.SqlBuilder
 		/// 返回修改行数
 		/// </summary>
 		/// <returns></returns>
-		public new int ToRows() => base.ToRows();
+		public new int ToAffectedRows() => base.ToAffectedRows();
 
 		/// <summary>
 		/// 返回修改行数
 		/// </summary>
 		/// <returns></returns>
-		public new ValueTask<int> ToRowsAsync(CancellationToken cancellationToken = default)
-			=> base.ToRowsAsync(cancellationToken);
+		public new ValueTask<int> ToAffectedRowsAsync(CancellationToken cancellationToken = default)
+			=> base.ToAffectedRowsAsync(cancellationToken);
 
 		/// <summary>
 		/// 返回受影响行数
 		/// </summary>
 		/// <returns></returns>
-		public InsertBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
+		public InsertBuilder<TModel> PipeToAffectedRows() => base.Pipe<int>(PipeReturnType.Rows);
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <returns></returns>
-		public int ToRows<T>(out T info)
+		public int ToAffectedRows<TResult>(out TResult info)
 		{
 			ReturnType = PipeReturnType.Rows;
-			info = ToOne<T>();
+			info = FirstOrDefault<TResult>();
 			return info != null ? 1 : 0;
 		}
 
@@ -146,20 +173,20 @@ namespace Creeper.SqlBuilder
 		/// 插入数据库并返回数据
 		/// </summary>
 		/// <returns></returns>
-		public TModel ToOne()
+		public TModel FirstOrDefault()
 		{
 			ReturnType = PipeReturnType.One;
-			return ToOne<TModel>();
+			return FirstOrDefault<TModel>();
 		}
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
 		/// <returns></returns>
-		public Task<TModel> ToOneAsync(CancellationToken cancellationToken = default)
+		public Task<TModel> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
 		{
 			ReturnType = PipeReturnType.One;
-			return base.ToOneAsync<TModel>(cancellationToken);
+			return base.FirstOrDefaultAsync<TModel>(cancellationToken);
 		}
 		#region Override
 		public override string ToString() => base.ToString();

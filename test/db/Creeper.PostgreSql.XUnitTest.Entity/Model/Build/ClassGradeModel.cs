@@ -24,13 +24,15 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 	public partial class ClassGradeModel : ICreeperDbModel
 	{
 		#region Properties
-		[CreeperPrimaryKey] public Guid Id { get; set; }
+		[CreeperDbColumn(Primary = true)]
+		public Guid Id { get; set; }
+
 		/// <summary>
 		/// 班级名称
 		/// </summary>
 		public string Name { get; set; }
+
 		public DateTime Create_time { get; set; }
 		#endregion
-
 	}
 }

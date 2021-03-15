@@ -39,6 +39,9 @@ namespace Creeper.Generator.Common
 		}
 		public void Gen(CreeperGenerateBuilder option)
 		{
+			if (!Directory.Exists(option.OutputPath))
+				Directory.CreateDirectory(option.OutputPath);
+
 			var packageReference = option.Connections.GroupBy(a => a.DataBaseKind.ToString()).Select(a => a.Key)
 				.Select(a => string.Format("\t\t<PackageReference Include=\"Creeper.{2}\" Version=\"{0}\" />{1}", _cfg["CreeperNugetVersion"], Environment.NewLine, a)).ToList();
 

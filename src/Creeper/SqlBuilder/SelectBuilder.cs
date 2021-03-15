@@ -18,8 +18,6 @@ namespace Creeper.SqlBuilder
 	public class SelectBuilder<TModel> : WhereBuilder<SelectBuilder<TModel>, TModel>
 		where TModel : class, ICreeperDbModel, new()
 	{
-
-		private readonly List<UnionModel> _unions = new List<UnionModel>();
 		#region Identity
 		private string _groupBy;
 		private string _orderBy;
@@ -30,6 +28,7 @@ namespace Creeper.SqlBuilder
 		private string _tablesampleSystem;
 		private string _distinctOn;
 		private string _except;
+		private readonly List<UnionModel> _unions = new List<UnionModel>();
 		#endregion
 
 		#region Constructor
@@ -100,7 +99,7 @@ namespace Creeper.SqlBuilder
 		}
 
 		/// <summary>
-		/// having
+		/// 等同于数据库offset
 		/// </summary>
 		/// <param name="s"></param>
 		/// <returns></returns>
@@ -111,18 +110,18 @@ namespace Creeper.SqlBuilder
 		}
 
 		/// <summary>
-		/// limit
+		/// 等同于数据库offset
 		/// </summary>
 		/// <param name="i"></param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> Limit(int i)
+		public SelectBuilder<TModel> Take(int i)
 		{
 			_limit = i;
 			return this;
 		}
 
 		/// <summary>
-		/// 等于数据库offset
+		/// 等同于数据库offset
 		/// </summary>
 		/// <param name="i"></param>
 		/// <returns></returns>
@@ -133,50 +132,6 @@ namespace Creeper.SqlBuilder
 		}
 
 		/// <summary>
-		/// 连接一个sql语句
-		/// </summary>
-		/// <param name="view"></param>
-		/// <returns></returns>
-		public SelectBuilder<TModel> Union(string view)
-		{
-			_union = $"({view})";
-			return this;
-		}
-
-		/// <summary>
-		/// 连接selectBuilder
-		/// </summary>
-		/// <param name="sqlBuilder"></param>
-		/// <returns></returns>
-		public SelectBuilder<TModel> Union(ISqlBuilder sqlBuilder)
-		{
-			_union = $"({sqlBuilder.CommandText})";
-			return AddParameters(sqlBuilder.Params);
-		}
-
-		/// <summary>
-		/// 排除一个sql语句
-		/// </summary>
-		/// <param name="view"></param>
-		/// <returns></returns>
-		public SelectBuilder<TModel> Except(string view)
-		{
-			_except = $"({view})";
-			return this;
-		}
-
-		/// <summary>
-		/// 排除selectBuilder
-		/// </summary>
-		/// <param name="sqlBuilder"></param>
-		/// <returns></returns>
-		public SelectBuilder<TModel> Except(ISqlBuilder sqlBuilder)
-		{
-			_except = $"({sqlBuilder.CommandText})";
-			return AddParameters(sqlBuilder.Params);
-		}
-
-		/// <summary>
 		/// 分页
 		/// </summary>
 		/// <param name="pageIndex"></param>
@@ -184,14 +139,14 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> Page(int pageIndex, int pageSize)
 		{
-			Limit(pageSize); Skip(Math.Max(0, pageIndex - 1) * pageSize);
+			Take(pageSize); Skip(Math.Max(0, pageIndex - 1) * pageSize);
 			return this;
 		}
 
 		/// <summary>
 		/// 随机抽样
 		/// </summary>
-		/// <param name="percent">seed</param>
+		/// <param name="percent">采样的分数，表示为一个0到100之间的百分数</param>
 		/// <returns></returns>
 		public SelectBuilder<TModel> TableSampleSystem(double percent)
 		{
@@ -206,7 +161,9 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> DistinctOn(Expression<Func<TModel, object>> selector)
 		{
-			_distinctOn = GetSelector(selector);
+			if (string.IsNullOrEmpty(_distinctOn))
+				_distinctOn += ',';
+			_distinctOn += GetSelector(selector);
 			return this;
 		}
 
@@ -226,58 +183,168 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> GroupBy<TSource>(Expression<Func<TSource, object>> selector) where TSource : ICreeperDbModel, new()
 			=> GroupBy(GetSelector(selector));
+		#endregion
 
+		#region UNION/EXCEPT/INTERSECT
+		/// <summary>
+		/// 连接一个sql语句
+		/// </summary>
+		/// <param name="view"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Union(string view)
+		{
+			_union = $"UNION({view})";
+			return this;
+		}
+
+		/// <summary>
+		/// 连接selectBuilder
+		/// </summary>
+		/// <param name="sqlBuilder"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Union(ISqlBuilder sqlBuilder)
+			=> Union(sqlBuilder.CommandText).AddParameters(sqlBuilder.Params);
+
+		/// <summary>
+		/// 连接一个sql语句
+		/// </summary>
+		/// <param name="view"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionAll(string view)
+		{
+			_union += $"UNION ALL({view})";
+			return this;
+		}
+
+		/// <summary>
+		/// 连接selectBuilder
+		/// </summary>
+		/// <param name="sqlBuilder"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionAll(ISqlBuilder sqlBuilder)
+			=> UnionAll(sqlBuilder.CommandText).AddParameters(sqlBuilder.Params);
+
+		/// <summary>
+		/// 排除一个sql语句
+		/// </summary>
+		/// <param name="view"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Except(string view)
+		{
+			_except = $"({view})";
+			return this;
+		}
+
+		/// <summary>
+		/// 排除selectBuilder
+		/// </summary>
+		/// <param name="sqlBuilder"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Except(ISqlBuilder sqlBuilder)
+			=> Except(sqlBuilder.CommandText).AddParameters(sqlBuilder.Params);
+
+		/// <summary>
+		/// 排除一个sql语句
+		/// </summary>
+		/// <param name="view"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Intersect(string view)
+		{
+			_except = $"({view})";
+			return this;
+		}
+
+		/// <summary>
+		/// 排除selectBuilder
+		/// </summary>
+		/// <param name="sqlBuilder"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Intersect(ISqlBuilder sqlBuilder)
+			=> Intersect(sqlBuilder.CommandText).AddParameters(sqlBuilder.Params);
+		#endregion
+
+		#region OrderBy
 		/// <summary>
 		/// order by asc
 		/// </summary>
 		/// <param name="selector">key selector</param>
-		/// <param name="isNullsLast">use nulls last</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> OrderBy(Expression<Func<TModel, object>> selector, bool isNullsLast = false)
-			=> OrderBy<TModel>(selector, isNullsLast);
+		public SelectBuilder<TModel> OrderBy(Expression<Func<TModel, object>> selector)
+			=> OrderBy<TModel>(selector);
 
 		/// <summary>
 		/// order by desc
 		/// </summary>
 		/// <param name="selector">key selector</param>
-		/// <param name="isNullsLast">is nulls last</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> OrderByDescending(Expression<Func<TModel, object>> selector, bool isNullsLast = false)
-			=> OrderByDescending<TModel>(selector, isNullsLast);
+		public SelectBuilder<TModel> OrderByDescending(Expression<Func<TModel, object>> selector)
+			=> OrderByDescending<TModel>(selector);
 
 		/// <summary>
 		/// order by asc
 		/// </summary>
 		/// <typeparam name="TSource">model type</typeparam>
 		/// <param name="selector">key selector</param>
-		/// <param name="isNullsLast">is nulls last</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> OrderBy<TSource>(Expression<Func<TSource, object>> selector, bool isNullsLast = false) where TSource : ICreeperDbModel, new()
-			=> OrderBy(string.Concat(GetSelector(selector), isNullsLast ? " NULLS LAST" : ""));
+		public SelectBuilder<TModel> OrderBy<TSource>(Expression<Func<TSource, object>> selector) where TSource : ICreeperDbModel, new()
+			=> OrderBy(GetSelector(selector));
 
 		/// <summary>
 		/// order by desc
 		/// </summary>
 		/// <typeparam name="TSource">model type</typeparam>
 		/// <param name="selector">key selector</param>
-		/// <param name="isNullsLast">is nulls last</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> OrderByDescending<TSource>(Expression<Func<TSource, object>> selector, bool isNullsLast = false) where TSource : ICreeperDbModel, new()
-			=> OrderBy(string.Concat(GetSelector(selector), " desc", isNullsLast ? " NULLS LAST" : ""));
+		public SelectBuilder<TModel> OrderByDescending<TSource>(Expression<Func<TSource, object>> selector) where TSource : ICreeperDbModel, new()
+			=> OrderBy(string.Concat(GetSelector(selector), " DESC"));
+
+		/// <summary>
+		/// order by asc
+		/// </summary>
+		/// <param name="selector">key selector</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> OrderByNullsLast(Expression<Func<TModel, object>> selector)
+			=> OrderByNullsLast<TModel>(selector);
+
+		/// <summary>
+		/// order by desc
+		/// </summary>
+		/// <param name="selector">key selector</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> OrderByDescendingNullsLast(Expression<Func<TModel, object>> selector)
+			=> OrderByDescendingNullsLast<TModel>(selector);
+
+		/// <summary>
+		/// order by asc
+		/// </summary>
+		/// <typeparam name="TSource">model type</typeparam>
+		/// <param name="selector">key selector</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> OrderByNullsLast<TSource>(Expression<Func<TSource, object>> selector) where TSource : ICreeperDbModel, new()
+			=> OrderBy(string.Concat(GetSelector(selector), " NULLS LAST"));
+
+		/// <summary>
+		/// order by desc
+		/// </summary>
+		/// <typeparam name="TSource">model type</typeparam>
+		/// <param name="selector">key selector</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> OrderByDescendingNullsLast<TSource>(Expression<Func<TSource, object>> selector) where TSource : ICreeperDbModel, new()
+			=> OrderBy(string.Concat(GetSelector(selector), " DESC", " NULLS LAST"));
+
 		#endregion
 
 		#region ToList
 		/// <summary>
 		/// 返回列表
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
 		/// <param name="fields"></param>
 		/// <returns></returns>
-		public List<T> ToList<T>(string fields = null)
+		public List<TResult> ToList<TResult>(string fields = null)
 		{
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			if (IsReturnDefault) return new List<T>();
-			return base.ToList<T>();
+			if (IsReturnDefault) return new List<TResult>();
+			SetFields(fields);
+			return base.ToList<TResult>();
 		}
 
 		/// <summary>
@@ -305,26 +372,24 @@ namespace Creeper.SqlBuilder
 		public List<TModel> ToList() => ToList<TModel>();
 		#endregion
 
-		#region ToOne
+		#region FirstOrDefault
 		/// <summary>
 		/// 返回一行
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
 		/// <param name="fields"></param>
 		/// <returns></returns>
-		public T ToOne<T>(string fields = null)
+		public TResult FirstOrDefault<TResult>(string fields = null)
 		{
-			Limit(1);
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			return base.ToOne<T>();
+			SetFields(fields);
+			return base.FirstOrDefault<TResult>();
 		}
 
 		/// <summary>
 		/// 返回一行
 		/// </summary>
 		/// <returns></returns>
-		public TModel ToOne()
-			=> ToOne<TModel>();
+		public TModel FirstOrDefault()
+			=> FirstOrDefault<TModel>();
 
 		/// <summary>
 		/// 返回一行
@@ -332,8 +397,8 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TKey"></typeparam>
 		/// <param name="selector"></param>
 		/// <returns></returns>
-		public TKey ToOne<TKey>(Expression<Func<TModel, TKey>> selector)
-			=> ToOne<TModel, TKey>(selector);
+		public TKey FirstOrDefault<TKey>(Expression<Func<TModel, TKey>> selector)
+			=> FirstOrDefault<TModel, TKey>(selector);
 
 		/// <summary>
 		/// 返回一行
@@ -342,40 +407,8 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TKey"></typeparam>
 		/// <param name="selector"></param>
 		/// <returns></returns>
-		public TKey ToOne<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
-			=> ToScalar(selector);
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="fields"></param>
-		/// <returns></returns>
-		public TKey ToScalar<TKey>(string fields)
-		{
-			Limit(1);
-			Fields = fields;
-			return ToScalar<TKey>();
-		}
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="selector"></param>
-		/// <returns></returns>
-		public TKey ToScalar<TKey>(Expression<Func<TModel, TKey>> selector)
-			=> ToScalar<TModel, TKey>(selector);
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TSource"></typeparam>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="selector"></param>
-		/// <returns></returns>
-		public TKey ToScalar<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
-			=> ToScalar<TKey>(GetSelector(selector));
+		public TKey FirstOrDefault<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).ToScalar<TKey>();
 		#endregion
 
 		#region Single Method
@@ -383,8 +416,7 @@ namespace Creeper.SqlBuilder
 		/// 返回行数
 		/// </summary>
 		/// <returns></returns>
-		public long Count() => ToScalar<long>("COUNT(1)");
-
+		public long Count() => SetFields("COUNT(1)").ToScalar<long>();
 		/// <summary>
 		/// 取最大值
 		/// </summary>
@@ -560,16 +592,12 @@ namespace Creeper.SqlBuilder
 		/// <summary>
 		/// 返回列表
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <param name="fields"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public Task<List<T>> ToListAsync<T>(string fields = null, CancellationToken cancellationToken = default)
-		{
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			if (IsReturnDefault) return Task.FromResult(new List<T>());
-			return base.ToListAsync<T>(cancellationToken);
-		}
+		public Task<List<TResult>> ToListAsync<TResult>(string fields = null, CancellationToken cancellationToken = default)
+			=> IsReturnDefault ? Task.FromResult(new List<TResult>()) : SetFields(fields).ToListAsync<TResult>(cancellationToken);
 
 		/// <summary>
 		/// 返回列表
@@ -600,28 +628,24 @@ namespace Creeper.SqlBuilder
 			=> ToListAsync<TModel>(cancellationToken);
 		#endregion
 
-		#region ToOne
+		#region FirstOrDefault
 		/// <summary>
 		/// 返回一行
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <param name="fields"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public Task<T> ToOneAsync<T>(string fields = null, CancellationToken cancellationToken = default)
-		{
-			Limit(1);
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			return base.ToOneAsync<T>(cancellationToken);
-		}
+		public Task<TResult> FirstOrDefaultAsync<TResult>(string fields = null, CancellationToken cancellationToken = default)
+			=> SetFieldsTake(fields).FirstOrDefaultAsync<TResult>(cancellationToken);
 
 		/// <summary>
 		/// 返回一行
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public Task<TModel> ToOneAsync(CancellationToken cancellationToken = default)
-			=> ToOneAsync<TModel>(cancellationToken);
+		public Task<TModel> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
+			=> FirstOrDefaultAsync<TModel>(cancellationToken);
 
 		/// <summary>
 		/// 返回一行
@@ -630,8 +654,8 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public ValueTask<TKey> ToOneAsync<TKey>(Expression<Func<TModel, TKey>> selector, CancellationToken cancellationToken = default)
-			=> ToOneAsync<TModel, TKey>(selector, cancellationToken);
+		public ValueTask<TKey> FirstOrDefaultAsync<TKey>(Expression<Func<TModel, TKey>> selector, CancellationToken cancellationToken = default)
+			=> FirstOrDefaultAsync<TModel, TKey>(selector, cancellationToken);
 
 		/// <summary>
 		/// 返回一行
@@ -641,53 +665,18 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public ValueTask<TKey> ToOneAsync<TSource, TKey>(Expression<Func<TSource, TKey>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
-			=> ToScalarAsync(selector, cancellationToken);
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="fields"></param>
-		/// <param name="cancellationToken"></param>
-		/// <returns></returns>
-		public ValueTask<TKey> ToScalarAsync<TKey>(string fields, CancellationToken cancellationToken = default)
-		{
-			Limit(1);
-			Fields = fields;
-			return base.ToScalarAsync<TKey>(cancellationToken);
-		}
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="selector"></param>
-		/// <param name="cancellationToken"></param>
-		/// <returns></returns>
-		public ValueTask<TKey> ToScalarAsync<TKey>(Expression<Func<TModel, TKey>> selector, CancellationToken cancellationToken = default)
-			=> ToScalarAsync<TModel, TKey>(selector, cancellationToken);
-
-		/// <summary>
-		/// 返回第一个元素
-		/// </summary>
-		/// <typeparam name="TSource"></typeparam>
-		/// <typeparam name="TKey"></typeparam>
-		/// <param name="selector"></param>
-		/// <param name="cancellationToken"></param>
-		/// <returns></returns>
-		public ValueTask<TKey> ToScalarAsync<TSource, TKey>(Expression<Func<TSource, TKey>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
-			=> ToScalarAsync<TKey>(GetSelector(selector), cancellationToken);
+		public ValueTask<TKey> FirstOrDefaultAsync<TSource, TKey>(Expression<Func<TSource, TKey>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
+			=> SetFieldsTake(GetSelector(selector)).ToScalarAsync<TKey>(cancellationToken);
 		#endregion
 
-		#region ToOneUnion
+		#region UnionFirstOrDefault
 		/// <summary>
 		/// 返回联表实体
 		/// </summary>
 		/// <typeparam name="T1"></typeparam>
 		/// <returns></returns>
-		public Task<(TModel, T1)> ToOneUnionAsync<T1>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new()
-			=> ToOneAsync<(TModel, T1)>(cancellationToken);
+		public Task<(TModel, T1)> UnionFirstOrDefaultAsync<T1>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new()
+			=> FirstOrDefaultAsync<(TModel, T1)>(cancellationToken);
 
 		/// <summary>
 		/// 返回联表实体
@@ -695,8 +684,8 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="T1"></typeparam>
 		/// <typeparam name="T2"></typeparam>
 		/// <returns></returns>
-		public Task<(TModel, T1, T2)> ToOneUnionAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
-			=> ToOneAsync<(TModel, T1, T2)>(cancellationToken);
+		public Task<(TModel, T1, T2)> UnionFirstOrDefaultAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
+			=> FirstOrDefaultAsync<(TModel, T1, T2)>(cancellationToken);
 
 		/// <summary>
 		/// 返回联表实体
@@ -705,17 +694,17 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="T2"></typeparam>
 		/// <typeparam name="T3"></typeparam>
 		/// <returns></returns>
-		public Task<(TModel, T1, T2, T3)> ToOneUnionAsync<T1, T2, T3>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
-			=> ToOneAsync<(TModel, T1, T2, T3)>(cancellationToken);
+		public Task<(TModel, T1, T2, T3)> UnionFirstOrDefaultAsync<T1, T2, T3>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
+			=> FirstOrDefaultAsync<(TModel, T1, T2, T3)>(cancellationToken);
 		#endregion
 
-		#region ToListUnion
+		#region UnionToList
 		/// <summary>
 		/// 返回联表实体列表
 		/// </summary>
 		/// <typeparam name="T1"></typeparam>
 		/// <returns></returns>
-		public Task<List<(TModel, T1)>> ToListUnionAsync<T1>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new()
+		public Task<List<(TModel, T1)>> UnionToListAsync<T1>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new()
 			=> ToListAsync<(TModel, T1)>(cancellationToken);
 
 		/// <summary>
@@ -724,7 +713,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="T1"></typeparam>
 		/// <typeparam name="T2"></typeparam>
 		/// <returns></returns>
-		public Task<List<(TModel, T1, T2)>> ToListUnionAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
+		public Task<List<(TModel, T1, T2)>> UnionToListAsync<T1, T2>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
 			=> ToListAsync<(TModel, T1, T2)>(cancellationToken);
 
 		/// <summary>
@@ -734,7 +723,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="T2"></typeparam>
 		/// <typeparam name="T3"></typeparam>
 		/// <returns></returns>
-		public Task<List<(TModel, T1, T2, T3)>> ToListUnionAsync<T1, T2, T3>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
+		public Task<List<(TModel, T1, T2, T3)>> UnionToListAsync<T1, T2, T3>(CancellationToken cancellationToken = default) where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
 			=> ToListAsync<(TModel, T1, T2, T3)>(cancellationToken);
 		#endregion
 
@@ -745,7 +734,8 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public ValueTask<long> CountAsync(CancellationToken cancellationToken = default) => ToScalarAsync<long>("COUNT(1)", cancellationToken);
+		public ValueTask<long> CountAsync(CancellationToken cancellationToken = default)
+			=> SetFields("COUNT(1)").ToScalarAsync<long>(cancellationToken);
 
 		/// <summary>
 		/// 取最大值
@@ -925,7 +915,7 @@ namespace Creeper.SqlBuilder
 			=> SumAsync<TModel, TKey>(selector, defaultValue, cancellationToken);
 
 		/// <summary>
-		/// 去平均值
+		/// 取平均值
 		/// </summary>
 		/// <typeparam name="TKey">return value type</typeparam>
 		/// <param name="selector">key selector</param>
@@ -939,103 +929,97 @@ namespace Creeper.SqlBuilder
 		#endregion
 
 		#region Pipe
-		#region ToOne
+		#region FirstOrDefault
 
 		/// <summary>
 		/// 返回一行(管道)
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <param name="fields">返回字段, 可选</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToOnePipe<T>(string fields = null)
-		{
-			Limit(1);
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			return base.ToPipe<T>(PipeReturnType.One);
-		}
+		public SelectBuilder<TModel> PipeFirstOrDefault<TResult>(string fields = null)
+			=> SetFieldsTake(fields).Pipe<TResult>(PipeReturnType.One);
 
 		/// <summary>
 		/// 返回一行(管道)
 		/// </summary>
 		/// <param name="fields">返回字段, 可选</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToOnePipe(string fields = null)
-			=> ToOnePipe<TModel>(fields);
+		public SelectBuilder<TModel> PipeFirstOrDefault(string fields = null)
+			=> PipeFirstOrDefault<TModel>(fields);
 
 		/// <summary>
 		/// 返回联表实体(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToOneUnionPipe<T1>() where T1 : ICreeperDbModel, new()
-			=> ToOnePipe<(TModel, T1)>();
+		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1>() where TResult1 : ICreeperDbModel, new()
+			=> PipeFirstOrDefault<(TModel, TResult1)>();
 
 		/// <summary>
 		/// 返回联表实体(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToOneUnionPipe<T1, T2>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
-			=> ToOnePipe<(TModel, T1, T2)>();
+		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+			=> PipeFirstOrDefault<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
 		/// 返回联表实体(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
+		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToOneUnionPipe<T1, T2, T3>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
-			=> ToOnePipe<(TModel, T1, T2, T3)>();
+		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+			=> PipeFirstOrDefault<(TModel, TResult1, TResult2, TResult3)>();
 		#endregion
 
 		#region ToList
 		/// <summary>
 		/// 返回列表(管道)
 		/// </summary>
-		/// <typeparam name="T">model type</typeparam>
+		/// <typeparam name="TResult">model type</typeparam>
 		/// <param name="fields">指定输出字段</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToListPipe<T>(string fields = null)
-		{
-			if (!string.IsNullOrEmpty(fields)) Fields = fields;
-			return base.ToPipe<T>(PipeReturnType.List);
-		}
+		public SelectBuilder<TModel> PipeToList<TResult>(string fields = null)
+			=> SetFields(fields).Pipe<TResult>(PipeReturnType.List);
 
 		/// <summary>
 		/// 返回列表(管道)
 		/// </summary>
 		/// <param name="fields"></param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToListPipe(string fields = null) => ToListPipe<TModel>(fields);
+		public SelectBuilder<TModel> PipeToList(string fields = null)
+			=> PipeToList<TModel>(fields);
 
 		/// <summary>
 		/// 返回联表实体列表(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToListUnionPipe<T1>() where T1 : ICreeperDbModel, new()
-			=> ToListPipe<(TModel, T1)>();
+		public SelectBuilder<TModel> PipeUnionToList<TResult1>() where TResult1 : ICreeperDbModel, new()
+			=> PipeToList<(TModel, TResult1)>();
 
 		/// <summary>
 		/// 返回联表实体列表(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToListUnionPipe<T1, T2>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
-			=> ToListPipe<(TModel, T1, T2)>();
+		public SelectBuilder<TModel> PipeUnionToList<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+			=> PipeToList<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
 		/// 返回联表实体列表(管道)
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
+		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> ToListUnionPipe<T1, T2, T3>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
-			=> ToListPipe<(TModel, T1, T2, T3)>();
+		public SelectBuilder<TModel> PipeUnionToList<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+			=> PipeToList<(TModel, TResult1, TResult2, TResult3)>();
 
 		#endregion
 		#endregion
@@ -1046,50 +1030,45 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> InnerJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate, bool isReturn = false) where TTarget : ICreeperDbModel, new()
-			=> InnerJoin<TModel, TTarget>(predicate, isReturn);
+		public SelectBuilder<TModel> InnerJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> InnerJoin<TModel, TTarget>(predicate);
 
 		/// <summary>
 		/// left join
 		/// </summary>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> LeftJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate, bool isReturn = false) where TTarget : ICreeperDbModel, new()
-				  => LeftJoin<TModel, TTarget>(predicate, isReturn);
+		public SelectBuilder<TModel> LeftJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> LeftJoin<TModel, TTarget>(predicate);
 
 		/// <summary>
 		/// right join
 		/// </summary>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> RightJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate, bool isReturn = false) where TTarget : ICreeperDbModel, new()
-				  => RightJoin<TModel, TTarget>(predicate, isReturn);
+		public SelectBuilder<TModel> RightJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> RightJoin<TModel, TTarget>(predicate);
 
 		/// <summary>
 		/// left outer join
 		/// </summary>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> LeftOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate, bool isReturn = false) where TTarget : ICreeperDbModel, new()
-				  => LeftJoin<TModel, TTarget>(predicate, isReturn);
+		public SelectBuilder<TModel> LeftOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> LeftOuterJoin<TModel, TTarget>(predicate);
 
 		/// <summary>
 		/// right outer join
 		/// </summary>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> RightOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate, bool isReturn = false) where TTarget : ICreeperDbModel, new()
-				  => RightJoin<TModel, TTarget>(predicate, isReturn);
+		public SelectBuilder<TModel> RightOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> RightOuterJoin<TModel, TTarget>(predicate);
 
 		/// <summary>
 		/// inner join
@@ -1097,10 +1076,9 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TSource">table model type</typeparam>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> InnerJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate, bool isReturn = false) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
-			=> Join(predicate, UnionEnum.INNER_JOIN, isReturn);
+		public SelectBuilder<TModel> InnerJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.INNER_JOIN, false);
 
 		/// <summary>
 		/// left join
@@ -1108,10 +1086,9 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TSource">table model type</typeparam>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> LeftJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate, bool isReturn = false) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
-			=> Join(predicate, UnionEnum.LEFT_JOIN, isReturn);
+		public SelectBuilder<TModel> LeftJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.LEFT_JOIN, false);
 
 		/// <summary>
 		/// right join
@@ -1119,10 +1096,9 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TSource">table model type</typeparam>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> RightJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate, bool isReturn = false) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
-			=> Join(predicate, UnionEnum.RIGHT_JOIN, isReturn);
+		public SelectBuilder<TModel> RightJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.RIGHT_JOIN, false);
 
 		/// <summary>
 		/// left outer join
@@ -1130,10 +1106,9 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TSource">table model type</typeparam>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> LeftOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate, bool isReturn = false) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
-			=> Join(predicate, UnionEnum.LEFT_OUTER_JOIN, isReturn);
+		public SelectBuilder<TModel> LeftOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.LEFT_OUTER_JOIN, false);
 
 		/// <summary>
 		/// right outer join
@@ -1141,10 +1116,104 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TSource">table model type</typeparam>
 		/// <typeparam name="TTarget">table model type</typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> RightOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate, bool isReturn = false) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
-			=> Join(predicate, UnionEnum.RIGHT_OUTER_JOIN, isReturn);
+		public SelectBuilder<TModel> RightOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.RIGHT_OUTER_JOIN, false);
+
+		/// <summary>
+		/// inner join, 关联返回
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionInnerJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> UnionInnerJoin<TModel, TTarget>(predicate);
+
+		/// <summary>
+		/// left join, 关联返回
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionLeftJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> UnionLeftJoin<TModel, TTarget>(predicate);
+
+		/// <summary>
+		/// right join, 关联返回
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionRightJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> UnionRightJoin<TModel, TTarget>(predicate);
+
+		/// <summary>
+		/// left outer join, 关联返回
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionLeftOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> UnionLeftOuterJoin<TModel, TTarget>(predicate);
+
+		/// <summary>
+		/// right outer join, 关联返回
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionRightOuterJoin<TTarget>(Expression<Func<TModel, TTarget, bool>> predicate) where TTarget : ICreeperDbModel, new()
+			=> UnionRightOuterJoin<TModel, TTarget>(predicate);
+
+		/// <summary>
+		/// inner join, 关联返回
+		/// </summary>
+		/// <typeparam name="TSource">table model type</typeparam>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionInnerJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.INNER_JOIN, true);
+
+		/// <summary>
+		/// left join, 关联返回
+		/// </summary>
+		/// <typeparam name="TSource">table model type</typeparam>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionLeftJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.LEFT_JOIN, true);
+
+		/// <summary>
+		/// right join, 关联返回
+		/// </summary>
+		/// <typeparam name="TSource">table model type</typeparam>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionRightJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.RIGHT_JOIN, true);
+
+		/// <summary>
+		/// left outer join, 关联返回
+		/// </summary>
+		/// <typeparam name="TSource">table model type</typeparam>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionLeftOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.LEFT_OUTER_JOIN, true);
+
+		/// <summary>
+		/// right outer join, 关联返回
+		/// </summary>
+		/// <typeparam name="TSource">table model type</typeparam>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="predicate"></param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionRightOuterJoin<TSource, TTarget>(Expression<Func<TSource, TTarget, bool>> predicate) where TSource : ICreeperDbModel, new() where TTarget : ICreeperDbModel, new()
+			=> Join(predicate, UnionEnum.RIGHT_OUTER_JOIN, true);
 
 		/// <summary>
 		/// join base method
@@ -1170,10 +1239,31 @@ namespace Creeper.SqlBuilder
 
 			var info = new UnionModel(unionAlias, EntityHelper.GetDbTable<TTarget>().TableName, expression.CmdText, unionType, isReturn);
 			if (info.IsReturn)
-				info.Fields = EntityHelper.GetModelTypeFieldsString<TTarget>(unionAlias);
+				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(unionAlias);
 			_unions.Add(info);
 			return AddParameters(expression.Parameters);
 		}
+		/// <summary>
+		/// join base method with string
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="unionType">union type</param>
+		/// <param name="alias">table alias name</param>
+		/// <param name="on">on expression</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> Join<TTarget>(UnionEnum unionType, string alias, string on) where TTarget : ICreeperDbModel, new()
+		 => Join<TTarget>(unionType, alias, on, false);
+
+		/// <summary>
+		/// join base method with string
+		/// </summary>
+		/// <typeparam name="TTarget">table model type</typeparam>
+		/// <param name="unionType">union type</param>
+		/// <param name="alias">table alias name</param>
+		/// <param name="on">on expression</param>
+		/// <returns></returns>
+		public SelectBuilder<TModel> UnionJoin<TTarget>(UnionEnum unionType, string alias, string on) where TTarget : ICreeperDbModel, new()
+			=> Join<TTarget>(unionType, alias, on, true);
 
 		/// <summary>
 		/// join base method with string
@@ -1184,11 +1274,11 @@ namespace Creeper.SqlBuilder
 		/// <param name="on">on expression</param>
 		/// <param name="isReturn">is add return fields</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> Join<TTarget>(UnionEnum unionType, string alias, string on, bool isReturn = false) where TTarget : ICreeperDbModel, new()
+		private SelectBuilder<TModel> Join<TTarget>(UnionEnum unionType, string alias, string on, bool isReturn = false) where TTarget : ICreeperDbModel, new()
 		{
 			var info = new UnionModel(alias, EntityHelper.GetDbTable<TTarget>().TableName, on, unionType, isReturn);
 			if (info.IsReturn)
-				info.Fields = EntityHelper.GetModelTypeFieldsString<TTarget>(alias);
+				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(alias);
 			_unions.Add(info);
 
 			return this;
@@ -1196,62 +1286,62 @@ namespace Creeper.SqlBuilder
 		#endregion
 
 		#region ToUnion
-		#region ToOne
+		#region FirstOrDefault
 		/// <summary>
 		/// 返回联表实体
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public (TModel, T1) ToOneUnion<T1>() where T1 : ICreeperDbModel, new()
-			=> ToOne<(TModel, T1)>();
+		public (TModel, TResult1) UnionFirstOrDefault<TResult1>() where TResult1 : ICreeperDbModel, new()
+			=> FirstOrDefault<(TModel, TResult1)>();
 
 		/// <summary>
 		/// 返回联表实体
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public (TModel, T1, T2) ToOneUnion<T1, T2>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
-			=> ToOne<(TModel, T1, T2)>();
+		public (TModel, TResult1, TResult2) UnionFirstOrDefault<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+			=> FirstOrDefault<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
 		/// 返回联表实体
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
+		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public (TModel, T1, T2, T3) ToOneUnion<T1, T2, T3>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
-			=> ToOne<(TModel, T1, T2, T3)>();
+		public (TModel, TResult1, TResult2, TResult3) UnionFirstOrDefault<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+			=> FirstOrDefault<(TModel, TResult1, TResult2, TResult3)>();
 		#endregion
 
 		#region ToList
 		/// <summary>
 		/// 返回联表实体列表
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public List<(TModel, T1)> ToListUnion<T1>() where T1 : ICreeperDbModel, new()
-			=> ToList<(TModel, T1)>();
+		public List<(TModel, TResult1)> UnionToList<TResult1>() where TResult1 : ICreeperDbModel, new()
+			=> ToList<(TModel, TResult1)>();
 
 		/// <summary>
 		/// 返回联表实体列表
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public List<(TModel, T1, T2)> ToListUnion<T1, T2>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new()
-			=> ToList<(TModel, T1, T2)>();
+		public List<(TModel, TResult1, TResult2)> UnionToList<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+			=> ToList<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
 		/// 返回联表实体列表
 		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
+		/// <typeparam name="TResult1"></typeparam>
+		/// <typeparam name="TResult2"></typeparam>
+		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public List<(TModel, T1, T2, T3)> ToListUnion<T1, T2, T3>() where T1 : ICreeperDbModel, new() where T2 : ICreeperDbModel, new() where T3 : ICreeperDbModel, new()
-			=> ToList<(TModel, T1, T2, T3)>();
+		public List<(TModel, TResult1, TResult2, TResult3)> UnionToList<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+			=> ToList<(TModel, TResult1, TResult2, TResult3)>();
 		#endregion
 		#endregion
 
@@ -1278,7 +1368,7 @@ namespace Creeper.SqlBuilder
 		public override string GetCommandText()
 		{
 			if (string.IsNullOrEmpty(Fields))
-				Fields = EntityHelper.GetModelTypeFieldsString<TModel>(MainAlias);
+				Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias);
 			var field = new StringBuilder();
 			var union = new StringBuilder();
 			if (!string.IsNullOrEmpty(_distinctOn))
@@ -1311,7 +1401,7 @@ namespace Creeper.SqlBuilder
 				sqlText.AppendLine(string.Concat("OFFSET ", _offset));
 
 			if (!string.IsNullOrEmpty(_union))
-				sqlText.AppendLine(string.Concat("UNION ", _union));
+				sqlText.AppendLine(string.Concat(_union));
 
 			if (!string.IsNullOrEmpty(_except))
 				sqlText.AppendLine(string.Concat("EXCEPT ", _except));
@@ -1319,13 +1409,13 @@ namespace Creeper.SqlBuilder
 		}
 		#endregion
 
-		#region Protected Method
+		#region Private
 		private TKey ScalarTransfer<TKey>(Expression selector, string method, TKey defaultValue)
 		{
 			var visit = GetExpression(selector);
 			AddParameters(visit.Parameters);
 			AddParameter(out string pName, defaultValue);
-			return ToScalar<TKey>($"COALESCE({method}({visit.CmdText}),@{pName})");
+			return SetFields($"COALESCE({method}({visit.CmdText}),@{pName})").ToScalar<TKey>();
 		}
 
 		private ValueTask<TKey> ScalarTransferAsync<TKey>(Expression selector, string method, TKey defaultValue, CancellationToken cancellationToken)
@@ -1333,7 +1423,17 @@ namespace Creeper.SqlBuilder
 			var visit = GetExpression(selector);
 			AddParameters(visit.Parameters);
 			AddParameter(out string pName, defaultValue);
-			return ToScalarAsync<TKey>($"COALESCE({method}({visit.CmdText}),@{pName})", cancellationToken);
+			return SetFields($"COALESCE({method}({visit.CmdText}),@{pName})").ToScalarAsync<TKey>(cancellationToken);
+		}
+
+		private SelectBuilder<TModel> SetFieldsTake(string fields)
+			=> SetFields(fields).Take(1);
+
+		private SelectBuilder<TModel> SetFields(string fields)
+		{
+			if (!string.IsNullOrEmpty(fields))
+				Fields = fields;
+			return this;
 		}
 		#endregion
 	}

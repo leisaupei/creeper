@@ -22,7 +22,12 @@ namespace Creeper.Generic
 		/// 子项扩展
 		/// </summary>
 		internal IList<ICreeperOptionsExtension> Extensions { get; } = new List<ICreeperOptionsExtension>();
+
+		/// <summary>
+		/// 数据库缓存类
+		/// </summary>
 		internal Type DbCacheType = null;
+
 		/// <summary>
 		/// 主从策略
 		/// </summary>

@@ -1,5 +1,6 @@
 using Creeper.Extensions;
 using Creeper.PostgreSql.XUnitTest.Entity.Model;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using Xunit;
@@ -16,6 +17,14 @@ namespace Creeper.PostgreSql.XUnitTest
 		}
 
 		[Fact]
+		public void WherePk()
+		{
+			var people = new PeopleModel { Id = StuPeopleId1, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EDataState.正常, Address_detail = new JObject() };
+			var peoples = new PeopleModel { Id = StuPeopleId2, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EDataState.正常, Address_detail = new JObject() };
+			var aff = _dbContext.Update(new[] { people, peoples }).Set(a => a.Name, "sss").ToAffectedRows();
+		}
+		
+		[Fact]
 		public void OrderBy()
 		{
 			var list = _dbContext.Select<PeopleModel>().OrderByDescending(a => a.Create_time).ToList();
@@ -27,7 +36,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					.InnerJoin<ClassmateModel>((a, b) => a.Id == b.Student_id)
 					.InnerJoin<ClassmateModel, TeacherModel>((b, c) => b.Teacher_id == c.Id)
 					.InnerJoin<PeopleModel>((a, d) => a.People_id == d.Id && d.Id == StuPeopleId1)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Null(union);
 		}
@@ -36,7 +45,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 					.Where(a => a.People_id == StuPeopleId1)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
@@ -46,7 +55,7 @@ namespace Creeper.PostgreSql.XUnitTest
 			var id = StuPeopleId1;
 			var info = _dbContext.Select<StudentModel>()
 					.Where(a => a.People_id == id)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
@@ -55,7 +64,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 				.WhereExists(_dbContext.Select<PeopleModel>().Field(b => b.Id).Where(b => b.Id == StuPeopleId1))
-				.ToOne();
+				.FirstOrDefault();
 		}
 		[Fact]
 		public void WhereClassProperty()
@@ -66,7 +75,7 @@ namespace Creeper.PostgreSql.XUnitTest
 			};
 			var info = _dbContext.Select<StudentModel>()
 					.Where(a => a.People_id == model.Id)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(StuPeopleId1, info.People_id);
 		}
@@ -75,7 +84,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 					.Where(a => a.Sex == null)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Null(info?.Sex);
 		}
@@ -84,7 +93,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 					.Where(a => a.Id == default)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Null(info?.Sex);
 		}
@@ -110,10 +119,10 @@ namespace Creeper.PostgreSql.XUnitTest
 			};
 			var info = _dbContext.Select<StudentModel>()
 					 .Where(a => a.People_id == model.Info.Id)
-					 .ToOne();
+					 .FirstOrDefault();
 			info = _dbContext.Select<StudentModel>()
 					 .Where(a => a.People_id == model1.Info.Info.Id)
-					 .ToOne();
+					 .FirstOrDefault();
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
 		[Fact]
@@ -121,7 +130,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 				  .Where(a => a.People_id == TestModel._id)
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
 		[Fact]
@@ -129,26 +138,26 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 				.Where(a => a.Id == Guid.Empty)
-				.ToOne();
+				.FirstOrDefault();
 			info = _dbContext.Select<PeopleModel>()
-				.Where(a => a.Name == "leisaupei")
-				.ToOne();
-			Assert.Equal("leisaupei", info.Name);
+				.Where(a => a.Name == "sss")
+				.FirstOrDefault();
+			Assert.Equal("sss", info.Name);
 		}
 		[Fact]
 		public void WhereMethodLast()
 		{
 			var info = _dbContext.Select<PeopleModel>()
-				  .Where(a => a.Name == "leisaupei".ToString())
-				  .ToOne();
-			Assert.Equal("leisaupei", info.Name);
+				  .Where(a => a.Name == "sss".ToString())
+				  .FirstOrDefault();
+			Assert.Equal("sss", info.Name);
 		}
 		[Fact]
 		public void WhereDifficultMethod()
 		{
 			var info = _dbContext.Select<PeopleModel>()
 				  .Where(a => a.Create_time < DateTime.Now.AddDays(-1))
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -156,7 +165,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 				  .Where(a => a.Id == Guid.Parse(StuPeopleId1.ToString()))
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.Equal(info.Id, StuPeopleId1);
 		}
 		[Fact]
@@ -164,10 +173,10 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<TypeTestModel>()
 				.Where(a => a.Array_type == new[] { 1 })
-				.ToOne();
+				.FirstOrDefault();
 			var info1 = _dbContext.Select<TypeTestModel>()
 				.Where(a => a.Uuid_array_type == new[] { Guid.Empty })
-				.ToOne();
+				.FirstOrDefault();
 			if (info != null)
 				Assert.Equal(1, info.Array_type.FirstOrDefault());
 		}
@@ -180,7 +189,7 @@ namespace Creeper.PostgreSql.XUnitTest
 				  {
 					  Id = StuPeopleId1
 				  }.Id)
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.Equal(StuPeopleId1, info.Id);
 		}
 		[Fact]
@@ -188,7 +197,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 				  .Where(a => a.Id == new Guid())
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.True(info == null || info?.Id == new Guid());
 		}
 		[Fact]
@@ -196,7 +205,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<PeopleModel>()
 				  .Where(a => (a.Id == new Guid() && a.Id == StuPeopleId1) || a.Id == StuPeopleId2)
-				  .ToOne();
+				  .FirstOrDefault();
 			Assert.Equal(StuPeopleId2, info.Id);
 		}
 		[Fact]
@@ -205,43 +214,43 @@ namespace Creeper.PostgreSql.XUnitTest
 			var info = _dbContext.Select<PeopleModel>()
 				.InnerJoin<StudentModel>((a, b) => a.Id == b.People_id && (b.People_id == StuPeopleId1 || a.Id == StuPeopleId2))
 				.Where<StudentModel>(b => b.People_id == StuPeopleId1)
-				.ToOne();
+				.FirstOrDefault();
 			Assert.Equal(StuPeopleId1, info.Id);
 		}
 		[Fact]
 		public void WhereOperationExpression()
 		{
-			var info = _dbContext.Select<PeopleModel>().Where(a => DateTime.Today - a.Create_time > TimeSpan.FromDays(2)).ToOne();
+			var info = _dbContext.Select<PeopleModel>().Where(a => DateTime.Today - a.Create_time > TimeSpan.FromDays(2)).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
 		public void WhereIndexParameter()
 		{
 			Guid[] id = new[] { StuPeopleId1, Guid.Empty };
-			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == id[0]).ToOne();
+			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == id[0]).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
 		public void WhereFieldParameter()
 		{
 			var arr = new[] { 1 };
-			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type[1] == arr[0]).ToOne();
+			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type[1] == arr[0]).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
 		public void WhereFieldLength()
 		{
-			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type.Length == 2).ToOne();
+			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type.Length == 2).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
 		public void WhereEnum()
 		{
 			EDataState value = EDataState.正常;
-			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == value).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == EDataState.正常).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)value).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)EDataState.正常).ToOne();
+			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == value).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == EDataState.正常).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)value).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)EDataState.正常).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -253,26 +262,27 @@ namespace Creeper.PostgreSql.XUnitTest
 			b.Id = Guid.Empty;
 			TypeTestModel info = null;
 
-			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { xx.Id, b.Id }.Contains(a.Id)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { xx.Id, b.Id }.Select(a => a).Contains(a.Id)).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { xx.Id, b.Id }.Contains(a.Id)).FirstOrDefault();
 			Assert.NotNull(info);
 
-			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { 1, 3, 4 }.Contains(a.Int4_type.Value)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { 1, 3, 4 }.Contains(a.Int4_type.Value)).FirstOrDefault();
 			Assert.NotNull(info);
 
 			//a.int_type <> all(array[2,3])
-			info = _dbContext.Select<TypeTestModel>().Where(a => !a.Array_type.Contains(3)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => !a.Array_type.Contains(3)).FirstOrDefault();
 			Assert.NotNull(info);
 
 			//3 = any(a.array_type)
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type.Contains(3)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type.Contains(3)).FirstOrDefault();
 			Assert.NotNull(info);
 
 			//var ints = new int[] { 2, 3 }.Select(f => f).ToList();
 			//a.int_type = any(array[2,3])
-			info = _dbContext.Select<TypeTestModel>().Where(a => new int[] { 2, 3 }.Select(f => f).ToArray().Contains(a.Int4_type.Value)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new int[] { 2, 3 }.Select(f => f).Contains(a.Int4_type.Value)).FirstOrDefault();
 			Assert.NotNull(info);
 
-			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { (int)EDataState.已删除, (int)EDataState.正常 }.Contains(a.Int4_type.Value)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { (int)EDataState.已删除, (int)EDataState.正常 }.Contains(a.Int4_type.Value)).FirstOrDefault();
 
 			Assert.NotNull(info);
 		}
@@ -283,26 +293,26 @@ namespace Creeper.PostgreSql.XUnitTest
 
 
 			//'xxx' like a.Varchar_type || '%'
-			info = _dbContext.Select<TypeTestModel>().Where(a => "xxxxxxxxxxxx".StartsWith(a.Varchar_type)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => "xxxxxxxxxxxx".StartsWith(a.Varchar_type)).FirstOrDefault();
 			Assert.NotNull(info);
 			//a.varchar_type like '%xxx%'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.Contains("xxx")).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.Contains("xxx")).FirstOrDefault();
 			Assert.NotNull(info);
 			//a.varchar_type like 'xxx%'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.StartsWith("xxx")).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.StartsWith("xxx")).FirstOrDefault();
 			Assert.NotNull(info);
 			//a.varchar_type like '%xxx'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.EndsWith("xxx")).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.EndsWith("xxx")).FirstOrDefault();
 			Assert.NotNull(info);
 
 			//a.varchar_type ilike '%xxx%'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.Contains("xxx", StringComparison.OrdinalIgnoreCase)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.Contains("xxx", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			Assert.NotNull(info);
 			//a.varchar_type ilike 'xxx%'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.StartsWith("xxx", StringComparison.OrdinalIgnoreCase)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.StartsWith("xxx", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			Assert.NotNull(info);
 			//a.varchar_type ilike '%xxx'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.EndsWith("xxx", StringComparison.OrdinalIgnoreCase)).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.EndsWith("xxx", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -310,10 +320,10 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			TypeTestModel info = null;
 			//a.varchar_type::text = 'xxxx'
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.ToString() == "xxxx").ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.ToString() == "xxxx").FirstOrDefault();
 			Assert.NotNull(info);
 			ParentPreantTestModel model = new ParentPreantTestModel { Name = "xxxx" };
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.ToString() == model.Name.ToString()).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type.ToString() == model.Name.ToString()).FirstOrDefault();
 			Assert.NotNull(info);
 
 		}
@@ -321,11 +331,12 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void WhereEqualsFunction()
 		{
 			TypeTestModel info = null;
+
 			Func<string, string> fuc = (str) =>
 			{
 				return "xxxx";
 			};
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type == fuc("xxxx")).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type == fuc("xxxx")).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -333,17 +344,17 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			TypeTestModel info = null;
 			var judge = 0;
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type == (judge == 0 ? "lsp" : "")).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_type == (judge == 0 ? "lsp" : "")).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
 		public void WhereArrayEqual()
 		{
 			TypeTestModel info = null;
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type == new[] { 0, 1 }).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Uuid_array_type == new[] { Guid.Empty }).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { "广东" } == a.Varchar_array_type).ToOne();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_array_type == new[] { "广东" }).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Array_type == new[] { 0, 1 }).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Uuid_array_type == new[] { Guid.Empty }).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { "广东" } == a.Varchar_array_type).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Varchar_array_type == new[] { "广东" }).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -351,7 +362,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			TypeTestModel info = null;
 			var sum = _dbContext.Select<TypeTestModel>().Sum(a => a.Int8_type ?? 0, 0);
-			info = _dbContext.Select<TypeTestModel>().Where(a => (a.Int4_type ?? 3) == 3).ToOne();
+			info = _dbContext.Select<TypeTestModel>().Where(a => (a.Int4_type ?? 3) == 3).FirstOrDefault();
 			Assert.NotNull(info);
 
 		}
@@ -360,7 +371,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 					.Where(a => a.People_id == Creeper.PostgreSql.XUnitTest.BaseTest.StuPeopleId1)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(info.People_id, Creeper.PostgreSql.XUnitTest.BaseTest.StuPeopleId1);
 		}
@@ -369,7 +380,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 					.Where(a => a.People_id == a.Id || a.People_id == StuPeopleId1)
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
@@ -378,7 +389,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 					.WhereIn(a => a.People_id, _dbContext.Select<StudentModel>().Field(a => a.People_id).Where(a => a.People_id == StuPeopleId1))
-					.ToOne();
+					.FirstOrDefault();
 
 			Assert.Equal(info.People_id, StuPeopleId1);
 		}
@@ -386,7 +397,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void Test()
 		{
 			//	ParentPreantTestModel model = new ParentPreantTestModel { Name = "xxx" };
-			//	var info = _dbContext.Select<TypeTestModel>() .Where(a => !a.Varchar_type.Contains(model.Name, StringComparison.OrdinalIgnoreCase)).ToOne();
+			//	var info = _dbContext.Select<TypeTestModel>() .Where(a => !a.Varchar_type.Contains(model.Name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 			//Expression<Func<ClassmateModel, Guid>> expression = f => f.Grade_id;
 			//MemberExpression body = expression.Body as MemberExpression;
 			//var equ = Expression.Equal(body, Expression.Constant(Guid.Empty, typeof(Guid)));

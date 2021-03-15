@@ -13,7 +13,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact]
 		public void ReturnJTokenInTuple()
 		{
-			//var info = _dbContext.Select<PeopleModel>() .Where(a => a.Id == StuPeopleId1).ToOne<(Guid id, string name, JToken address_detail, EDataState state)>("id,name,address_detail,state");
+			//var info = _dbContext.Select<PeopleModel>() .Where(a => a.Id == StuPeopleId1).FirstOrDefault<(Guid id, string name, JToken address_detail, EDataState state)>("id,name,address_detail,state");
 			_dbContext.GetExecute<DbMain>().ExecuteNonQuery("update class.grade set create_time = now() + @years", System.Data.CommandType.Text,
 				new[] { new Npgsql.NpgsqlParameter<TimeSpan>("years", TimeSpan.FromDays(365)) });
 
