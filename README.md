@@ -72,7 +72,7 @@ public class SomeController : Controller
     [HttpGet]
     public async Task SomeAction()
     {
-        _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).ToOne();
+        _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).FirstOrDefault();
     }
 }
 ```
