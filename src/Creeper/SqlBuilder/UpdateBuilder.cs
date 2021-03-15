@@ -77,24 +77,28 @@ namespace Creeper.SqlBuilder
 		/// 设置整型等于一个枚举
 		/// </summary>
 		/// <param name="selector">字段key selector</param>
-		/// <param name="value">value</param>
+		/// <param name="value">enum value, disallow null</param>
+		/// <exception cref="ArgumentNullException">if value is null</exception>
 		/// <returns></returns>
-		private UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey>> selector, [DisallowNull] Enum value) where TKey : IFormattable
-			=> Set(selector, (TKey)Convert.ChangeType(value, typeof(TKey)));
+		public UpdateBuilder<TModel> Set(Expression<Func<TModel, int>> selector, Enum value)
+		{
+			if (value is null) throw new ArgumentNullException(nameof(value));
 
+			return Set(selector, Convert.ToInt32(value));
+		}
 		/// <summary>
 		/// 设置整型等于一个枚举
 		/// </summary>
 		/// <param name="selector">字段key selector</param>
 		/// <param name="value">value</param>
 		/// <returns></returns>
-		private UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey?>> selector, Enum value) where TKey : struct, IFormattable
+		public UpdateBuilder<TModel> Set(Expression<Func<TModel, int?>> selector, Enum value)
 		{
 			var field = GetSelectorWithoutAlias(selector);
 			if (value == null)
 				return AddSetExpression(string.Format("{0} = null", field));
 
-			AddParameter(out string valueIndex, Convert.ChangeType(value, typeof(TKey)));
+			AddParameter(out string valueIndex, Convert.ToInt32(value));
 			return AddSetExpression(string.Format("{0} = @{1}", field, valueIndex));
 		}
 
@@ -185,23 +189,23 @@ namespace Creeper.SqlBuilder
 		/// 返回修改行数
 		/// </summary>
 		/// <returns></returns>
-		public new int ToRows() => base.ToRows();
+		public new int ToAffectedRows() => base.ToAffectedRows();
 
 		/// <summary>
 		/// 返回修改行数
 		/// </summary>
 		/// <returns></returns>
-		public new ValueTask<int> ToRowsAsync(CancellationToken cancellationToken = default)
-			=> base.ToRowsAsync(cancellationToken);
+		public new ValueTask<int> ToAffectedRowsAsync(CancellationToken cancellationToken = default)
+			=> base.ToAffectedRowsAsync(cancellationToken);
 
 		/// <summary>
 		/// 返回修改行数, 并且ref实体类(一行)
 		/// </summary>
 		/// <returns></returns>
-		public int ToRows(out TModel refInfo)
+		public int ToAffectedRows(out TModel refInfo)
 		{
 			ReturnType = PipeReturnType.Rows;
-			refInfo = base.ToOne<TModel>();
+			refInfo = base.FirstOrDefault<TModel>();
 			if (refInfo == null) return 0;
 			return 1;
 		}
@@ -211,7 +215,7 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <param name="refInfo"></param>
 		/// <returns></returns>
-		public int ToRows(out List<TModel> refInfo)
+		public int ToAffectedRows(out List<TModel> refInfo)
 		{
 			ReturnType = PipeReturnType.Rows;
 			refInfo = base.ToList<TModel>();
@@ -222,49 +226,49 @@ namespace Creeper.SqlBuilder
 		/// 管道模式
 		/// </summary>
 		/// <returns></returns>
-		public UpdateBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
+		public UpdateBuilder<TModel> PipeToAffectedRows() => base.Pipe<int>(PipeReturnType.Rows);
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
 		/// <returns></returns>
-		public TModel ToOne()
+		public TModel FirstOrDefault()
 		{
 			ReturnType = PipeReturnType.One;
-			return base.ToOne<TModel>();
+			return base.FirstOrDefault<TModel>();
 		}
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <returns></returns>
-		public new Task<T> ToOneAsync<T>(CancellationToken cancellationToken = default)
+		public new Task<TResult> FirstOrDefaultAsync<TResult>(CancellationToken cancellationToken = default)
 		{
 			ReturnType = PipeReturnType.One;
-			return base.ToOneAsync<T>(cancellationToken);
+			return base.FirstOrDefaultAsync<TResult>(cancellationToken);
 		}
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <returns></returns>
-		public new Task<List<T>> ToListAsync<T>(CancellationToken cancellationToken = default)
+		public new Task<List<TResult>> ToListAsync<TResult>(CancellationToken cancellationToken = default)
 		{
 			ReturnType = PipeReturnType.List;
-			return base.ToListAsync<T>(cancellationToken);
+			return base.ToListAsync<TResult>(cancellationToken);
 		}
 
 		/// <summary>
 		/// 插入数据库并返回数据
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
 		/// <returns></returns>
-		public new List<T> ToList<T>()
+		public new List<TResult> ToList<TResult>()
 		{
 			ReturnType = PipeReturnType.List;
-			return base.ToList<T>();
+			return base.ToList<TResult>();
 		}
 
 		#region Override
@@ -284,7 +288,7 @@ namespace Creeper.SqlBuilder
 			var ret = string.Empty;
 			if (ReturnType != PipeReturnType.Rows)
 			{
-				Fields = EntityHelper.GetModelTypeFieldsString<TModel>(MainAlias);
+				Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias);
 				ret = $"RETURNING {Fields}";
 			}
 			return $"UPDATE {MainTable} {MainAlias} SET {string.Join(",", _setList)} WHERE {string.Join("\nAND", WhereList)} {ret}";

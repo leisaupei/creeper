@@ -89,18 +89,16 @@ namespace Creeper.Driver
 		/// 执行多个sql语句
 		/// </summary>
 		/// <param name="builders"></param>
-		/// <param name="cmdType">command type</param>
 		/// <returns></returns>
-		object[] ExecuteDataReaderPipe(IEnumerable<ISqlBuilder> builders, CommandType cmdType = CommandType.Text);
+		object[] ExecuteDataReaderPipe(IEnumerable<ISqlBuilder> builders);
 
 		/// <summary>
 		/// 执行多个sql语句
 		/// </summary>
 		/// <param name="builders"></param>
-		/// <param name="cmdType">command type</param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		Task<object[]> ExecuteDataReaderPipeAsync(IEnumerable<ISqlBuilder> builders, CommandType cmdType = CommandType.Text, CancellationToken cancellationToken = default);
+		Task<object[]> ExecuteDataReaderPipeAsync(IEnumerable<ISqlBuilder> builders, CancellationToken cancellationToken = default);
 
 		/// <summary>
 		/// 获取command text修改行数

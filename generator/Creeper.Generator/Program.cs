@@ -87,7 +87,7 @@ namespace Creeper.Generator
 							foreach (var build in builds)
 							{
 								var ps = build.Split(';');
-								var types = ps.FirstOrDefault(a => a.Contains("dbtype="));
+								var types = ps.FirstOrDefault(a => a.Contains("type="));
 								if (types == null)
 									throw new ArgumentException("choose one of ", string.Join(",", Enum.GetNames(typeof(DataBaseKind))));
 								var kindStr = types.Split('=')[1];

@@ -185,11 +185,9 @@ WHERE (b.nspname='{_schemaName}' and a.relname='{_table.Name}')
 					string _array = f.IsArray ? "[".PadRight(Math.Max(0, f.Dimensions), ',') + "]" : "";
 					f.RelType = $"{_type}{_notnull}{_array}";
 				}
-				if (f.IsUnique)
-				{
-					if (f.Column_default?.StartsWith("nextval(") == true)
-						f.IsIdentity = true;
-				}
+
+				if (f.Column_default?.StartsWith("nextval(") == true)
+					f.IsIdentity = true;
 			}
 		}
 
@@ -226,7 +224,7 @@ WHERE a.indrelid = '{_schemaName}.{_table.Name}'::regclass AND a.indisprimary
 
 			using StreamWriter writer = new StreamWriter(File.Create(_filename), Encoding.UTF8);
 			CreeperGenerator.WriteAuthorHeader.Invoke(writer);
-			writer.Write(@"using Creeper.Driver;
+			writer.WriteLine(@"using Creeper.Driver;
 using System;
 using System.Collections.Generic;
 using System.Collections;
@@ -247,8 +245,7 @@ namespace {3}.{0}.{1}{2}
 	[CreeperDbTable(@""""""{6}"""".""""{9}""""""{8})]
 	public partial class {7} : ICreeperDbModel
 	{{
-		#region Properties
-",
+		#region Properties",
 CreeperGenerator.DbStandardSuffix,
 CreeperGenerator.Namespace,
 NamespaceSuffix,
@@ -260,24 +257,27 @@ ModelClassName,
 DbNameAttribute,
 _table.Name);
 
-			foreach (var item in _fieldList)
+			for (int i = 0; i < _fieldList.Count; i++)
 			{
-				var pkAttr = string.Empty;
+				TableFieldModel item = _fieldList[i];
+				var pkAttr = "[CreeperDbColumn({0})]";
+				var element = new List<string>();
 				if (_pkList.Any(a => a.Field == item.Field))
-					pkAttr = "[CreeperPrimaryKey] ";
-				if (Types.NotCreateModelFieldDbType(item.DbType, item.Typcategory))
+					element.Add("Primary = true");
+				if (item.IsIdentity)
 				{
-					WriteComment(item.Comment, 2);
-					writer.WriteLine($"{WriteComment(item.Comment, 2)}\t\t{pkAttr}public {item.RelType} {item.FieldUpCase} {{ get; set; }}");
+					element.Add("Identity = true");
 				}
+				var input = element.Count > 0 ? string.Format(pkAttr, string.Join(", ", element)) : null;
 
-				if (item.DbType == "geometry")
-				{
-					writer.WriteLine($"{WriteComment(item.Comment, 2)}\t\t{pkAttr}public {item.RelType} {item.FieldUpCase} {{ get; set; }}");
-				}
+				writer.Write(WriteComment(item.Comment, 2));
+				if (input != null)
+					writer.WriteLine(@"{1}{1}{0}", input, '\t');
+				writer.WriteLine(@"{3}{3}public {1} {2} {{ get; set; }}", input, item.RelType, item.FieldUpCase, '\t');
+				if (i != _fieldList.Count - 1)
+					writer.WriteLine();
 			}
 			writer.WriteLine("\t\t#endregion");
-			writer.WriteLine();
 			writer.WriteLine("\t}");
 			writer.WriteLine("}");
 
@@ -293,19 +293,18 @@ _table.Name);
 		private static StringBuilder WriteComment(string comment, int tab)
 		{
 			var sb = new StringBuilder();
+			if (string.IsNullOrWhiteSpace(comment)) return sb;
 			var tabStr = string.Empty;
 			for (int i = 0; i < tab; i++)
 				tabStr += "\t";
-			if (!string.IsNullOrEmpty(comment))
+
+			if (comment.Contains("\n"))
 			{
-				if (comment.Contains("\n"))
-				{
-					comment = comment.Replace("\r\n", string.Concat("\n", tabStr, "/// "));
-				}
-				sb.AppendLine(tabStr + "/// <summary>");
-				sb.AppendLine(tabStr + $"/// {comment}");
-				sb.AppendLine(tabStr + "/// </summary>");
+				comment = comment.Replace("\r\n", string.Concat("\n", tabStr, "/// "));
 			}
+			sb.AppendLine(tabStr + "/// <summary>");
+			sb.AppendLine(tabStr + $"/// {comment}");
+			sb.AppendLine(tabStr + "/// </summary>");
 			return sb;
 		}
 

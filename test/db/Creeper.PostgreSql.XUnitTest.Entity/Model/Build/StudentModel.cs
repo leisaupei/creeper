@@ -28,11 +28,15 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 		/// 学号
 		/// </summary>
 		public string Stu_no { get; set; }
-		public Guid Grade_id { get; set; }
-		public Guid People_id { get; set; }
-		public DateTime Create_time { get; set; }
-		[CreeperPrimaryKey] public Guid Id { get; set; }
-		#endregion
 
+		public Guid Grade_id { get; set; }
+
+		public Guid People_id { get; set; }
+
+		public DateTime Create_time { get; set; }
+
+		[CreeperDbColumn(Primary = true)]
+		public Guid Id { get; set; }
+		#endregion
 	}
 }

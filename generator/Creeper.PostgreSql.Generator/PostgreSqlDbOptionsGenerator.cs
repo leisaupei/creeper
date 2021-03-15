@@ -206,7 +206,7 @@ WHERE ns.nspname || '.' || a.typname not in ({Types.ConvertArrayToSql(_postgresE
 			_sbConstTypeConstrutor.AppendLine($"\t\t#region {_typeName}");
 			_sbConstTypeConstrutor.AppendLine(string.Format("\t\tpublic class {0}PostgreSqlDbOption : BasePostgreSqlDbOption<Db{0}, Db{1}>", _typeName.ToUpperPascal(), TypeName + CreeperDbContext.SecondarySuffix));
 			_sbConstTypeConstrutor.AppendLine("\t\t{");
-			_sbConstTypeConstrutor.AppendLine(string.Format("\t\t\tpublic {0}PostgreSqlDbOption(string mainConnectionString, string[] secondaryConnectionStrings) : base(mainConnectionString, secondaryConnectionStrings)  {{ }}", _typeName.ToUpperPascal(), TypeName));
+			_sbConstTypeConstrutor.AppendLine(string.Format("\t\t\tpublic {0}PostgreSqlDbOption(string mainConnectionString, string[] secondaryConnectionStrings) : base(mainConnectionString, secondaryConnectionStrings) {{ }}", _typeName.ToUpperPascal(), TypeName));
 			_sbConstTypeConstrutor.AppendLine("\t\t\tpublic override DbConnectionOptions Options => new DbConnectionOptions()");
 			_sbConstTypeConstrutor.AppendLine("\t\t\t{");
 			_sbConstTypeConstrutor.AppendLine("\t\t\t\tMapAction = conn =>");

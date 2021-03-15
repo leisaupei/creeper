@@ -1,6 +1,7 @@
 ﻿using Creeper.Extensions;
 using Creeper.Generic;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -82,7 +83,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		{
 			if (expression == null) return expression;
 			//表达式是否包含转换类型的表达式, 一般枚举类型运算需要用到
-			if (new[] { expression.Left, expression.Right }.Any(a => a.NodeType == ExpressionType.Convert))
+			if (expression.Left.NodeType == ExpressionType.Convert || expression.Right.NodeType == ExpressionType.Convert)
 			{
 				if (expression.Left.NodeType == ExpressionType.Convert)
 					VisitConvert((UnaryExpression)expression.Left, expression.Right, true);
@@ -126,7 +127,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			{
 				_arguments.Add(expression.Value);
 				string cond = null;
-				if (expression.IsIListImplementation()) //如果是list/array类型
+				if (expression.IsImplementation<IList>()) //如果是list/array类型
 				{
 					if (expression.Type.GetElementType() == typeof(string)) //如果是字符串数据, 部分数据库需要强制转换
 						cond = string.Format("CAST({{{0}}} AS {1}[])", _arguments.Count - 1, _dataBaseKind.GetCastBaseStringDbType());
@@ -186,7 +187,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 					if (expression.Object?.Type == typeof(string)) //如果是String.Contains, 那么使用like
 						format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(expression.Arguments), " '%'", connectorWords, "{1}", connectorWords, "'%'");
 
-					//其他情况使用 IList.Contains
+					//其他情况使用 IEnumerable.Contains
 					else
 					{
 						useDefault = false;
@@ -197,8 +198,12 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 						for (int i = 0; i < expression.Arguments.Count; i++) //遍历Visit成员表达式
 						{
 							Expression arg = expression.Arguments[i];
-							if (arg.IsIListImplementation()) //如果当前表达式是ILIst
+							//如果当前表达式是IEnumerable类型, 且不是
+							if (arg.IsImplementation<IEnumerable>() && arg.Type != typeof(string)) 
+							{
 								format = format.Replace($"{{{i}}}", $"{method}({{{i}}})");
+								arg = arg.ToArrayExpression();
+							}
 							Visit(arg);
 						}
 						if (!format.StartsWith("{0}")) //ALL/ANY只能在操作符后面, 这里添加前后对调方法, 用PostgreSql为例
@@ -231,7 +236,6 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 					var constantExpression = expression.GetConstantFromExression(expression.Type);
 					VisitConstant(constantExpression);
 					break;
-					//throw new NotSupportedException(expression.NodeType + " is not supported!");
 			}
 
 			if (useDefault)
@@ -253,7 +257,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		private string IgnoreCaseConvert(ReadOnlyCollection<Expression> arguments)
 		{
 			var ignoreCase = VisitStringContainCulture(arguments);
-			return ignoreCase ? "ILIKE" : "Like";
+			return ignoreCase ? "ILIKE" : "LIKE";
 		}
 
 		/// <summary>
@@ -273,7 +277,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// </summary>
 		/// <param name="unaryExpression">数据库成员一元表达式</param>
 		/// <param name="expression">包含变量输出的表达式</param>
-        /// <param name="unaryFirst">判断表达式左右顺序</param>
+		/// <param name="unaryFirst">判断表达式左右顺序</param>
 		/// <returns>是否完成解析标志</returns>
 		private bool VisitConvert(UnaryExpression unaryExpression, Expression expression, bool unaryFirst)
 		{

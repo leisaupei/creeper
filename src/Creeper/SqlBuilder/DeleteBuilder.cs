@@ -23,20 +23,20 @@ namespace Creeper.SqlBuilder
 		/// 返回修改行数
 		/// </summary>
 		/// <returns></returns>
-		public new int ToRows() => base.ToRows();
+		public new int ToAffectedRows() => base.ToAffectedRows();
 
         /// <summary>
         /// 管道模式
         /// </summary>
         /// <returns></returns>
-        public DeleteBuilder<TModel> ToRowsPipe() => base.ToPipe<int>(PipeReturnType.Rows);
+        public DeleteBuilder<TModel> PipeToAffectedRows() => base.Pipe<int>(PipeReturnType.Rows);
 
         /// <summary>
         /// 返回修改行数
         /// </summary>
         /// <returns></returns>
-        public new ValueTask<int> ToRowsAsync(CancellationToken cancellationToken = default)
-			=> base.ToRowsAsync(cancellationToken);
+        public new ValueTask<int> ToAffectedRowsAsync(CancellationToken cancellationToken = default)
+			=> base.ToAffectedRowsAsync(cancellationToken);
 
 		#region Override
 		public override string ToString() => base.ToString();

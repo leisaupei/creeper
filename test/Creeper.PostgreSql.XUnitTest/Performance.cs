@@ -29,7 +29,7 @@ namespace Creeper.PostgreSql.XUnitTest
 			await _dbContext.GetExecute<DbMain>().TransactionAsync(_transDbContext =>
 			{
 				var total = _transDbContext.Select<TypeTestModel>().Sum(a => a.Int8_type, 0);
-				var affrows = _transDbContext.Update<TypeTestModel>().Set(a => a.Int8_type, 0).Where(a => a.Id == Guid.Empty).ToRows();
+				var affrows = _transDbContext.Update<TypeTestModel>().Set(a => a.Int8_type, 0).Where(a => a.Id == Guid.Empty).ToAffectedRows();
 			}, CancellationToken.None);
 		}
 		[Fact]

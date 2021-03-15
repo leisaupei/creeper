@@ -24,11 +24,16 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 	public partial class ClassmateModel : ICreeperDbModel
 	{
 		#region Properties
-		[CreeperPrimaryKey] public Guid Teacher_id { get; set; }
-		[CreeperPrimaryKey] public Guid Student_id { get; set; }
-		[CreeperPrimaryKey] public Guid Grade_id { get; set; }
+		[CreeperDbColumn(Primary = true)]
+		public Guid Teacher_id { get; set; }
+
+		[CreeperDbColumn(Primary = true)]
+		public Guid Student_id { get; set; }
+
+		[CreeperDbColumn(Primary = true)]
+		public Guid Grade_id { get; set; }
+
 		public DateTime? Create_time { get; set; }
 		#endregion
-
 	}
 }

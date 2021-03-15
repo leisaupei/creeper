@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Creeper.SqlBuilder
 {
@@ -42,12 +43,9 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <typeparam name="TSource"></typeparam>
 		/// <param name="predicate"></param>
-		/// <param name="isAdd">是否添加此表达式</param>
 		/// <returns></returns>
-		public TBuilder Where<TSource>(Expression<Func<TSource, bool>> predicate, bool isAdd = true) where TSource : ICreeperDbModel, new()
+		public TBuilder Where<TSource>(Expression<Func<TSource, bool>> predicate) where TSource : ICreeperDbModel, new()
 		{
-			if (!isAdd) return This;
-
 			var info = GetExpression(predicate);
 			AddParameters(info.Parameters);
 			return Where(info.CmdText);
@@ -57,16 +55,15 @@ namespace Creeper.SqlBuilder
 		/// 主模型重载
 		/// </summary>
 		/// <param name="selector"></param>
-		/// <param name="isAdd">是否添加此表达式</param>
 		/// <returns></returns>
-		public TBuilder Where(Expression<Func<TModel, bool>> selector, bool isAdd = true)
-			=> Where<TModel>(selector, isAdd);
+		public TBuilder Where(Expression<Func<TModel, bool>> selector)
+			=> Where<TModel>(selector);
 
 		/// <summary>
 		/// 开始Or where表达式
 		/// </summary>
 		/// <returns></returns>
-		public TBuilder WhereStartOr()
+		public TBuilder WhereOrStart()
 		{
 			_isOrState = true;
 			return This;
@@ -76,7 +73,7 @@ namespace Creeper.SqlBuilder
 		/// 结束Or where表达式
 		/// </summary>
 		/// <returns></returns>
-		public TBuilder WhereEndOr()
+		public TBuilder WhereOrEnd()
 		{
 			_isOrState = false;
 			if (_orExpression.Count > 0)
@@ -327,112 +324,6 @@ namespace Creeper.SqlBuilder
 			=> WhereAnyOrDefault<TModel, TKey>(selector, values);
 
 		/// <summary>
-		/// 可选添加, format写法
-		/// </summary>
-		/// <param name="isAdd"></param>
-		/// <param name="filter"></param>
-		/// <param name="values"></param>
-		/// <returns></returns>
-		public TBuilder Where(bool isAdd, string filter, params object[] values)
-			=> isAdd ? Where(filter, values) : This;
-
-		/// <summary>
-		/// 可选添加添加func返回的where语句
-		/// </summary>
-		/// <param name="isAdd"></param>
-		/// <param name="filter"></param>
-		/// <returns></returns>
-		public TBuilder Where(bool isAdd, Func<string> filter)
-			=> isAdd ? Where(filter.Invoke()) : This;
-
-		/// <summary>
-		/// 是否添加 添加func返回的where语句, format格式
-		/// </summary>
-		/// <param name="isAdd">是否添加</param>
-		/// <param name="filter">返回Where(string,object) </param>
-		/// <returns></returns>
-		public TBuilder Where(bool isAdd, Func<(string, object[])> filter)
-		{
-			if (!isAdd) return This;
-			var (sql, ps) = filter.Invoke();
-			return Where(sql, ps);
-		}
-
-
-		/// <summary>
-		/// 双主键
-		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <param name="selectorT1"></param>
-		/// <param name="selectorT2"></param>
-		/// <param name="values"></param>
-		/// <returns></returns>
-		public TBuilder Where<T1, T2>(
-			Expression<Func<TModel, T1>> selectorT1,
-			Expression<Func<TModel, T2>> selectorT2,
-			IEnumerable<(T1, T2)> values)
-		{
-			string t1 = GetSelector(selectorT1), t2 = GetSelector(selectorT2);
-			WhereStartOr();
-			foreach (var item in values)
-				Where(string.Concat(t1, "={0} and ", t2, "={1}"), item.Item1, item.Item2);
-			return WhereEndOr();
-		}
-
-		/// <summary>
-		/// 三主键
-		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
-		/// <param name="selectorT1"></param>
-		/// <param name="selectorT2"></param>
-		/// <param name="selectorT3"></param>
-		/// <param name="values"></param>
-		/// <returns></returns>
-		public TBuilder Where<T1, T2, T3>(
-			Expression<Func<TModel, T1>> selectorT1,
-			Expression<Func<TModel, T2>> selectorT2,
-			Expression<Func<TModel, T3>> selectorT3,
-			IEnumerable<(T1, T2, T3)> values)
-		{
-
-			string t1 = GetSelector(selectorT1), t2 = GetSelector(selectorT2), t3 = GetSelector(selectorT3);
-			WhereStartOr();
-			foreach (var item in values)
-				Where(string.Concat(t1, "={0} and ", t2, "={1} and ", t3, "={2}"), item.Item1, item.Item2, item.Item3);
-			return WhereEndOr();
-		}
-
-		/// <summary>
-		/// 四主键
-		/// </summary>
-		/// <typeparam name="T1"></typeparam>
-		/// <typeparam name="T2"></typeparam>
-		/// <typeparam name="T3"></typeparam>
-		/// <typeparam name="T4"></typeparam>
-		/// <param name="selectorT1"></param>
-		/// <param name="selectorT2"></param>
-		/// <param name="selectorT3"></param>
-		/// <param name="selectorT4"></param>
-		/// <param name="values"></param>
-		/// <returns></returns>
-		public TBuilder Where<T1, T2, T3, T4>(
-			Expression<Func<TModel, T1>> selectorT1,
-			Expression<Func<TModel, T2>> selectorT2,
-			Expression<Func<TModel, T3>> selectorT3,
-			Expression<Func<TModel, T4>> selectorT4,
-			IEnumerable<(T1, T2, T3, T4)> values)
-		{
-			string t1 = GetSelector(selectorT1), t2 = GetSelector(selectorT2), t3 = GetSelector(selectorT3), t4 = GetSelector(selectorT4);
-			WhereStartOr();
-			foreach (var item in values)
-				Where(string.Concat(t1, "={0} and ", t2, "={1} and ", t3, "={2} and ", t4, "={3}"), item.Item1, item.Item2, item.Item3, item.Item4);
-			return WhereEndOr();
-		}
-
-		/// <summary>
 		/// where format 写法
 		/// </summary>
 		/// <param name="filter"></param>
@@ -461,6 +352,60 @@ namespace Creeper.SqlBuilder
 			return Where(filter);
 		}
 
+		/// <summary>
+		/// 主键查找
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		internal TBuilder WherePk(TModel model)
+		{
+			var pks = EntityHelper.GetPkFields<TModel>();
+			if (pks.Length == 0)
+				throw new ArgumentException(model.GetType().FullName + "没有主键标识");
+
+			var filters = new string[pks.Length];
+			var objs = new object[pks.Length];
+
+			for (int i = 0; i < pks.Length; i++)
+			{
+				filters[i] = $"\"{pks[i]}\"={{{i}}}";
+				objs[i] = typeof(TModel).GetProperty(pks[i], BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance).GetValue(model);
+			}
+
+			return Where(string.Join(" AND ", filters), objs);
+		}
+		/// <summary>
+		/// 主键查找
+		/// </summary>
+		/// <param name="models"></param>
+		/// <returns></returns>
+		internal TBuilder WherePk(IEnumerable<TModel> models)
+		{
+			var pks = EntityHelper.GetPkFields<TModel>();
+			if (pks.Length == 0)
+				throw new ArgumentException(typeof(TModel).FullName + "没有主键标识");
+
+			var properties = new PropertyInfo[pks.Length];
+			for (int i = 0; i < pks.Length; i++)
+				properties[i] = typeof(TModel).GetProperty(pks[i], BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+			var filters = new string[properties.Length];
+			var objs = new object[properties.Length];
+
+			WhereOrStart();
+			foreach (var m in models)
+			{
+				for (int i = 0; i < properties.Length; i++)
+				{
+					filters[i] = $"\"{pks[i]}\"={{{i}}}";
+					objs[i] = properties[i].GetValue(m);
+				}
+				Where(string.Join(" AND ", filters), objs);
+
+			}
+
+			return WhereOrEnd();
+		}
 		#endregion
 
 		#region SqlGenerator
