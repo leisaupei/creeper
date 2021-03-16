@@ -70,9 +70,9 @@ public class SomeController : Controller
     }
 
     [HttpGet]
-    public async Task SomeAction()
+    public DbModel SomeAction()
     {
-        _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).FirstOrDefault();
+        return _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).FirstOrDefault();
     }
 }
 ```
