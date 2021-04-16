@@ -4,9 +4,7 @@
 public partial class PeopleModel : ICreeperDbModel
 {
     //唯一键
-    //自增整型主键此处为
-    //[CreeperDbColumn(PrimaryKey = true, IdentityKey = true, Ignore = IgnoreWhen.Input)]
-    [CreeperDbColumn(PrimaryKey = true)] 
+    [CreeperDbColumn(Primary = true)] 
     public Guid Id { get; set; }
     //年龄
     public int Age { get; set; }
@@ -27,7 +25,7 @@ int affectedRows = _dbContext.Delete(people);
 List<PeopleModel> peoples = new List<PeopleModel>();
 peoples.Add(new PeopleModel { Id = 1, Age = 25, Name = "小明" });
 peoples.Add(new PeopleModel { Id = 2, Age = 26, Name = "小红" });
-int affectedRows = _dbContext.DeleteMany(peoples);
+int affectedRows = _dbContext.Delete(peoples);
 ```
 ## 根据条件删除
 ``` C#

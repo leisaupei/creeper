@@ -4,9 +4,7 @@
 public partial class StudentModel : ICreeperDbModel
 {
     //唯一键
-    //自增整型主键此处为
-    //[CreeperDbColumn(PrimaryKey = true, IdentityKey = true, Ignore = IgnoreWhen.Input)]
-    [CreeperDbColumn(PrimaryKey = true)] 
+    [CreeperDbColumn(Primary = true)] 
     public Guid Id { get; set; }
     //学号, 唯一键
     public string Stu_no { get; set; }
@@ -23,7 +21,7 @@ public partial class StudentModel : ICreeperDbModel
 }
 ```
 ## 主从数据库切换By
-根据场景选择查询的主/从数据库，优先使用全局数据库主从策略，详见[配置DbContext-Startup.cs](../README.md#Startup.cs)
+根据场景选择查询的主/从数据库，优先使用全局数据库主从策略，详见[配置DbContext-Startup](./../README.md#Startup)
 ``` C#
 public enum DataBaseType
 {
@@ -50,7 +48,7 @@ StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Id == 1).By<Db
 ``` C#
 StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Id == 1).FirstOrDefault();
 ```
-> Where更多用法详见[查询表达式](./SelectExpression.md)
+> ``Where``更多用法详见[查询表达式](./SelectExpression.md)
 
 ## 查询多条数据ToList
 查询people表返回Name为小明的多条记录
@@ -68,6 +66,8 @@ string stuNo = _dbContext.Select<StudentModel>().Where(a => a.Id == 1).FirstOrDe
 ### 返回多列
 ``` C#
 List<(string stuNo, string name)> stu = _dbContext.Select<StudentModel>().ToList<(string, string)>(@"a.""stu_no"", a.""name""");
+//如果是主表的字段, 也可以这么写
+List<(string stuNo, string name)> stu = _dbContext.Select<StudentModel>().ToList<(string, string)>(a => new { a.Stu_no, a.Name });
 ```
 
 ## 查询返回类型
@@ -103,7 +103,7 @@ List<Dictonary<string, object>> stus = _dbContext.Select<StudentModel>()
 ## 自定义查询PipeToList/PipeFirstOrDefault
 > 用法见[自定义查询](./CustomQuery.md)
 ## 汇总Avg/Min/Max/Sum/Count
-- Avg/Min/Max/Sum还有``defaultValue``参数，数据为null时取该值，也可使用可空类型接收``<decimal?>``
+- ``Avg``/``Min``/``Max``/``Sum``还有``defaultValue``参数，数据为``null``时取该值，也可使用可空类型接收``<decimal?>``
 - 可使用COALESCE语法规则
 
 学生总数
@@ -123,11 +123,11 @@ decimal avgAge = _dbContext.Select<StudentModel>().Avg<decimal>(a => a.Age ?? 0)
 decimal avgAge = _dbContext.Select<StudentModel>().Avg<decimal>(a => a.Age, 0);
 ```
 
-> 除了Count以外其他字段直接用lambda表达式selector即可
+> 除了``Count``以外其他字段直接用lambda表达式selector即可
 > 
-> 注意区分Coalesce语法与defaultValue语法
+> 注意区分``Coalesce``语法与``defaultValue``语法
 ## 排序OrderBy(升序)/OrderByDescending(降序)
-多个OrderBy/OrderByDescending方法以','分隔输出
+多个``OrderBy``/``OrderByDescending``方法以','分隔输出
 ### 单级排序
 查询people表根据Create_time降序后返回第1条记录
 ``` C#
@@ -144,7 +144,7 @@ StudentModel stu = _dbContext.Select<StudentModel>().OrderByDescending(a => a.Cr
 ```
 
 ## 分组查询GroupBy
-多个GroupBy方法以英文','分隔输出
+多个``GroupBy``方法以英文','分隔输出
 ### 单条件分组
 查出各班级人数
 ``` C#
@@ -165,7 +165,7 @@ List<(Guid gradeId, int age, long count)> stat = _dbContext.Select<StudentModel>
     .GroupBy(a => a.Grade_id).Having("COUNT(1) > 10")
     .ToList<(Guid, int, long)>(@"a.""grade_id"", a.""age"", COUNT(1)");
 ```
-> 因为Having条件一般是自定义的聚合条件，所以目前仅支持字符串
+> 因为``Having``条件一般是自定义的聚合条件，所以目前仅支持字符串
 
 ## 分页查询Take/Skip/Page
 使用的是Linq的语法，结合场景增加Page方法
@@ -183,9 +183,9 @@ List<StudentModel> stus = _dbContext.Select<StudentModel>().OrderBy(a => a.Stu_n
 ```
 
 ## 联合查询Union/UnionAll/Expect/Intersect
-- Union/UnionAll两个结果的并集，UnionAll不会忽略重复结果
-- Expect两个结果的差
-- Intersect两个结果的交集
+- ``Union``/``UnionAll``两个结果的并集，``UnionAll``不会忽略重复结果
+- ``Expect``两个结果的差
+- ``Intersect``两个结果的交集
 
 找出学号前5人和后5人
 ``` C#
@@ -195,7 +195,7 @@ List<StudentModel> stus = _dbContext.Select<StudentModel>().OrderBy(a => a.Stu_n
 > 其他方法的写法都与这个一致，可按照实际场景选择合适的方法 
 
 ## 随机抽样TableSampleSystem
-大量数据中随机抽取样本数据，性能比order by random()高。
+- 大量数据中随机抽取样本数据，性能比``ORDER BY RANDOM()``高。
 
 随机查出5名学生，如:
 ``` C#

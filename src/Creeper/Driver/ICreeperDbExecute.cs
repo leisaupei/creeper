@@ -35,13 +35,13 @@ namespace Creeper.Driver
 		/// <summary>
 		/// 回滚事务
 		/// </summary>
-		void RollBackTransaction();
+		void RollbackTransaction();
 
 		/// <summary>
 		/// 回滚事务
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		ValueTask RollBackTransactionAsync(CancellationToken cancellationToken = default);
+		ValueTask RollbackTransactionAsync(CancellationToken cancellationToken = default);
 	}
 }

@@ -357,11 +357,11 @@ namespace Creeper.SqlBuilder
 		/// </summary>
 		/// <param name="model"></param>
 		/// <returns></returns>
-		internal TBuilder WherePk(TModel model)
+		internal TBuilder Where(TModel model)
 		{
 			var pks = EntityHelper.GetPkFields<TModel>();
 			if (pks.Length == 0)
-				throw new ArgumentException(model.GetType().FullName + "没有主键标识");
+				throw new NoPrimaryKeyException<TModel>();
 
 			var filters = new string[pks.Length];
 			var objs = new object[pks.Length];
@@ -374,16 +374,17 @@ namespace Creeper.SqlBuilder
 
 			return Where(string.Join(" AND ", filters), objs);
 		}
+
 		/// <summary>
 		/// 主键查找
 		/// </summary>
 		/// <param name="models"></param>
 		/// <returns></returns>
-		internal TBuilder WherePk(IEnumerable<TModel> models)
+		internal TBuilder Where(IEnumerable<TModel> models)
 		{
 			var pks = EntityHelper.GetPkFields<TModel>();
 			if (pks.Length == 0)
-				throw new ArgumentException(typeof(TModel).FullName + "没有主键标识");
+				throw new NoPrimaryKeyException<TModel>();
 
 			var properties = new PropertyInfo[pks.Length];
 			for (int i = 0; i < pks.Length; i++)
@@ -415,7 +416,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <returns></returns>
 		protected string GetSelector(Expression selector)
-		   => SqlGenerator.GetSelector(selector, DbExecute.ConnectionOptions.DataBaseKind);
+		   => SqlGenerator.GetSelector(selector, DbConverter);
 
 		/// <summary>
 		///  a=>a.Key == "xxx" ==> a."key" = 'xxx'
@@ -423,7 +424,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="predicate"></param>
 		/// <returns></returns>
 		protected ExpressionModel GetExpression(Expression predicate)
-			=> SqlGenerator.GetExpression(predicate, DbExecute.ConnectionOptions.GetDbParameter, DbExecute.ConnectionOptions.DataBaseKind);
+			=> SqlGenerator.GetExpression(predicate, DbConverter.GetDbParameter, DbConverter);
 
 		/// <summary>
 		/// a=>a.Key ==> key
@@ -431,7 +432,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <returns></returns>
 		protected string GetSelectorWithoutAlias(Expression selector)
-			 => SqlGenerator.GetSelectorWithoutAlias(selector, DbExecute.ConnectionOptions.DataBaseKind);
+			 => SqlGenerator.GetSelectorWithoutAlias(selector, DbConverter);
 		#endregion
 
 	}

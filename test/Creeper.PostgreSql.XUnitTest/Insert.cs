@@ -25,7 +25,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					Create_time = DateTime.Now, // you can ignore if use Datetime.Now;
 					Name = "leisaupei",
 					Sex = true,
-					State = EDataState.正常,
+					State = EtDataState.正常,
 					Address_detail = new JObject
 					{
 						["province"] = "广东",
@@ -47,7 +47,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					Create_time = DateTime.Now,
 					Name = "leisaupei",
 					Sex = true,
-					State = EDataState.正常,
+					State = EtDataState.正常,
 					Address_detail = new JObject
 					{
 						["province"] = "广东",
@@ -71,24 +71,13 @@ namespace Creeper.PostgreSql.XUnitTest
 				Create_time = DateTime.Now,
 				Name = "nickname",
 				Sex = true,
-				State = EDataState.正常,
+				State = EtDataState.正常,
 				Address_detail = new JObject
 				{
 					["province"] = "广东",
 					["city"] = "广州"
 				},
 			});
-			//else you can
-			//row = Teacher.Commit(new TeacherModel
-			//{
-			//	Address = "xxx",
-			//	Id = StuPeopleId2,
-			//	Age = 10,
-			//	Create_time = DateTime.Now,
-			//	Name = "nickname",
-			//	Sex = true
-
-			//});
 			Assert.Equal(1, row);
 		}
 		[Fact, Order(3)]
@@ -109,26 +98,30 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void InsertCustomized()
 		{
 			var info = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).FirstOrDefault();
-			if (info != null) return;
-			var affrows = _dbContext.Insert<StudentModel>().Set(f => f.Id, Guid.NewGuid())
-							.Set(a => a.People_id, StuPeopleId1)
-							.Set(a => a.Stu_no, StuNo1)
-							.Set(a => a.Grade_id, GradeId)
-							.Set(a => a.Create_time, DateTime.Now)
-							.ToAffectedRows(out info);
-			Assert.NotNull(info);
-			Assert.Equal(1, affrows);
+			if (info == null)
+			{
+				var affrows = _dbContext.Insert<StudentModel>().Set(f => f.Id, Guid.NewGuid())
+								.Set(a => a.People_id, StuPeopleId1)
+								.Set(a => a.Stu_no, StuNo1)
+								.Set(a => a.Grade_id, GradeId)
+								.Set(a => a.Create_time, DateTime.Now)
+								.ToAffectedRows(out info);
+				Assert.Equal(1, affrows);
+				Assert.NotNull(info);
+			}
 
-			var info1 = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId1).FirstOrDefault();
-			if (info1 != null) return;
-			var affrows1 = _dbContext.Insert<StudentModel>().Set(a => a.Id, Guid.NewGuid())
-							.Set(a => a.People_id, StuPeopleId2)
-							.Set(a => a.Stu_no, StuNo2)
-							.Set(a => a.Grade_id, GradeId)
-							.Set(a => a.Create_time, DateTime.Now)
-							.ToAffectedRows(out info1);
-			Assert.NotNull(info1);
-			Assert.Equal(1, affrows1);
+			var info1 = _dbContext.Select<StudentModel>().Where(a => a.People_id == StuPeopleId2).FirstOrDefault();
+			if (info1 == null)
+			{
+				var affrows1 = _dbContext.Insert<StudentModel>().Set(a => a.Id, Guid.NewGuid())
+								.Set(a => a.People_id, StuPeopleId2)
+								.Set(a => a.Stu_no, StuNo2)
+								.Set(a => a.Grade_id, GradeId)
+								.Set(a => a.Create_time, DateTime.Now)
+								.ToAffectedRows(out info1);
+				Assert.NotNull(info1);
+				Assert.Equal(1, affrows1);
+			}
 		}
 		[Fact, Order(4)]
 		public void InsertMultiple()
@@ -141,7 +134,7 @@ namespace Creeper.PostgreSql.XUnitTest
 				Create_time = DateTime.Now,
 				Name = "nickname",
 				Sex = true,
-				State = EDataState.正常,
+				State = EtDataState.正常,
 				Address_detail = new JObject
 				{
 					["province"] = "广东",
@@ -157,7 +150,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					Create_time = DateTime.Now,
 					Name = "nickname",
 					Sex = true,
-					State = EDataState.正常,
+					State = EtDataState.正常,
 					Address_detail = new JObject
 					{
 						["province"] = "广东",
@@ -172,7 +165,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					Create_time = DateTime.Now,
 					Name = "nickname",
 					Sex = true,
-					State = EDataState.正常,
+					State = EtDataState.正常,
 					Address_detail = new JObject
 					{
 						["province"] = "广东",
@@ -180,7 +173,7 @@ namespace Creeper.PostgreSql.XUnitTest
 					},
 				}
 			};
-			var rows = _dbContext.Insert(arr);
+			var rows = _dbContext.InsertOnly(arr);
 
 			Assert.NotEqual(0, rows);
 		}

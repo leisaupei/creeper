@@ -31,6 +31,11 @@ namespace Creeper.SqlBuilder
 		protected string MainTable { get; set; }
 
 		/// <summary>
+		/// 
+		/// </summary>
+		protected ICreeperDbTypeConverter DbConverter { get; set; }
+
+		/// <summary>
 		/// 主表别名, 默认为: "a"
 		/// </summary>
 		protected string MainAlias { get; set; } = "a";
@@ -76,6 +81,11 @@ namespace Creeper.SqlBuilder
 		internal DbCacheType UseCacheType { get; private set; } = DbCacheType.None;
 
 		/// <summary>
+		/// 缓存过期时间
+		/// </summary>
+		internal TimeSpan? DbCacheExpireTime { get; set; }
+
+		/// <summary>
 		/// where条件数量
 		/// </summary>
 		public int WhereCount => WhereList.Count;
@@ -86,8 +96,11 @@ namespace Creeper.SqlBuilder
 		{
 			var table = EntityHelper.GetDbTable<TModel>();
 
+			DbConverter = TypeHelper.GetConvert(table.DbName);
 			if (string.IsNullOrEmpty(MainTable))
 				MainTable = table.TableName;
+
+			if (dbContext == null) return;
 
 			DbName = table.DbName;
 
@@ -132,34 +145,12 @@ namespace Creeper.SqlBuilder
 		/// 使用数据库缓存, 仅支持FirstOrDefault,ToScalar方法
 		/// </summary>
 		/// <returns></returns>
-		public TBuilder ByCache()
+		public TBuilder ByCache(TimeSpan? expireTime = null)
 		{
 			if (CreeperDbContext.DbCache == null)
 				throw new ArgumentNullException("Not found the implemention type of ICreeperDbExecute");
 			UseCacheType = DbCacheType.Default;
-			return This;
-		}
-
-		/// <summary>
-		/// 使用数据库主键缓存, 仅支持FirstOrDefault,ToScalar方法
-		/// </summary>
-		/// <returns></returns>
-		[Obsolete]
-		public TBuilder ByPkCache()
-		{
-			if (CreeperDbContext.DbCache == null)
-				throw new ArgumentNullException("Not found the implemention type of ICreeperDbExecute");
-			UseCacheType = DbCacheType.PkCache;
-			return This;
-		}
-
-		/// <summary>
-		/// 穿透缓存
-		/// </summary>
-		/// <returns></returns>
-		[Obsolete]
-		public TBuilder ThroughCache()
-		{
+			DbCacheExpireTime = expireTime;
 			return This;
 		}
 
@@ -170,7 +161,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="value"></param>
 		/// <returns></returns>
 		public TBuilder AddParameter(string parameterName, object value)
-			=> AddParameter(DbExecute.ConnectionOptions.GetDbParameter(parameterName, value));
+			=> AddParameter(DbConverter.GetDbParameter(parameterName, value));
 
 		/// <summary>
 		/// 添加参数
@@ -180,7 +171,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public TBuilder AddParameter(out string parameterName, object value)
 		{
-			parameterName = EntityHelper.ParamsIndex;
+			parameterName = ParameterCounting.Index;
 			return AddParameter(parameterName, value);
 		}
 
@@ -321,7 +312,7 @@ namespace Creeper.SqlBuilder
 		public string ToString(string field)
 		{
 			if (!string.IsNullOrEmpty(field)) Fields = field;
-			return CreeperDbContext.GetConvert(DbExecute.ConnectionOptions.DataBaseKind).ConvertSqlToString(this);
+			return TypeHelper.GetConvert(DbExecute.ConnectionOptions.DataBaseKind).ConvertSqlToString(this);
 		}
 
 		/// <summary>
@@ -347,7 +338,7 @@ namespace Creeper.SqlBuilder
 				return value;
 			}
 			var ret = fn.Invoke();
-			CreeperDbContext.DbCache.Set(key, ret);
+			CreeperDbContext.DbCache.Set(key, ret, DbCacheExpireTime);
 			return ret;
 		}
 		private async Task<T> GetCacheResultAsync<T>(Func<Task<T>> fn)
@@ -357,7 +348,7 @@ namespace Creeper.SqlBuilder
 			if (await CreeperDbContext.DbCache.ExistsAsync(key))
 				return (T)await CreeperDbContext.DbCache.GetAsync(key, typeof(T));
 			var ret = await fn.Invoke();
-			await CreeperDbContext.DbCache.SetAsync(key, ret);
+			await CreeperDbContext.DbCache.SetAsync(key, ret, DbCacheExpireTime);
 			return ret;
 		}
 
@@ -396,7 +387,6 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		private TResult One<TResult>()
 			=> DbExecute.ExecuteDataReaderModel<TResult>(CommandText, CommandType.Text, Params.ToArray());
-
 
 		/// <summary>
 		/// 返回第一行

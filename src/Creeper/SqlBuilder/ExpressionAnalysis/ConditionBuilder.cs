@@ -1,4 +1,5 @@
-﻿using Creeper.Extensions;
+﻿using Creeper.Driver;
+using Creeper.Extensions;
 using Creeper.Generic;
 using System;
 using System.Collections;
@@ -28,21 +29,16 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		public string[] Alias { get; private set; }
 
 		/// <summary>
-		/// 数据库类型
-		/// </summary>
-		private readonly DataBaseKind _dataBaseKind;
-		/// <summary>
 		/// 字段是否加引号
 		/// </summary>
-		private readonly bool _ifWithQuotationMarks = false;
 		private readonly List<object> _arguments = new List<object>();
 		private readonly HashSet<string> _alias = new HashSet<string>();
 		private readonly Stack<string> _conditionParts = new Stack<string>();
+		private readonly ICreeperDbTypeConverter _converter;
 
-		public ConditionBuilder(DataBaseKind dataBaseKind)
+		public ConditionBuilder(ICreeperDbTypeConverter converter)
 		{
-			_dataBaseKind = dataBaseKind;
-			_ifWithQuotationMarks = dataBaseKind.GetWithQuotationMarks();
+			_converter = converter;
 		}
 
 		public void Build(Expression expression)
@@ -63,129 +59,142 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			_alias.CopyTo(Alias);
 		}
 
-		protected override Expression VisitUnary(UnaryExpression expression)
+		protected override Expression VisitNew(NewExpression node)
 		{
-			if (expression == null) return expression;
+			for (int i = 0; i < node.Arguments.Count; i++)
+			{
+				Visit(node.Arguments[i]);
+				if (i != node.Arguments.Count - 1)
+					_conditionParts.Push(", ");
+			}
+			MergeConditionParts();
+			return node;
+		}
+
+		protected override Expression VisitUnary(UnaryExpression node)
+		{
+			if (node == null) return node;
 			// !xxx.Equal("") 非表达式语句
-			if (expression.NodeType == ExpressionType.Not) _conditionParts.Push("NOT");
-			if (expression.NodeType == ExpressionType.ArrayLength)
+			if (node.NodeType == ExpressionType.Not) _conditionParts.Push("NOT");
+			if (node.NodeType == ExpressionType.ArrayLength)
 			{
 				_conditionParts.Push("array_length(");
-				Visit(expression.Operand);
+				Visit(node.Operand);
 				_conditionParts.Push(",1)");
 				MergeConditionParts("{0}{1}{2}");
-				return expression;
+				return node;
 			}
 			//这里只是添加NOT标记, 直接请求父类的访问方法继续递归
-			return base.VisitUnary(expression);
+			return base.VisitUnary(node);
 		}
-		protected override Expression VisitBinary(BinaryExpression expression)
+
+		protected override Expression VisitBinary(BinaryExpression node)
 		{
-			if (expression == null) return expression;
+			if (node == null) return node;
 			//表达式是否包含转换类型的表达式, 一般枚举类型运算需要用到
-			if (expression.Left.NodeType == ExpressionType.Convert || expression.Right.NodeType == ExpressionType.Convert)
+			if (node.Left.NodeType == ExpressionType.Convert || node.Right.NodeType == ExpressionType.Convert)
 			{
-				if (expression.Left.NodeType == ExpressionType.Convert)
-					VisitConvert((UnaryExpression)expression.Left, expression.Right, true);
+				if (node.Left.NodeType == ExpressionType.Convert)
+					VisitConvert((UnaryExpression)node.Left, node.Right, true);
 				else
-					VisitConvert((UnaryExpression)expression.Right, expression.Left, false);
+					VisitConvert((UnaryExpression)node.Right, node.Left, false);
 			}
-			else if (expression.NodeType == ExpressionType.ArrayIndex) //array[1]表达式包含数组索引
+			else if (node.NodeType == ExpressionType.ArrayIndex) //array[1]表达式包含数组索引
 			{
-				if (expression.Left.NodeType == ExpressionType.MemberAccess)
+				if (node.Left.NodeType == ExpressionType.MemberAccess)
 				{
-					Visit(expression.Left);
+					Visit(node.Left);
 
 					//数据库索引从1开始
-					_conditionParts.Push(string.Concat("[", (int)expression.Right.GetExpressionValue() + 1, "]"));
+					_conditionParts.Push(string.Concat("[", (int)node.Right.GetExpressionValue() + 1, "]"));
 					MergeConditionParts();
-					return expression;
+					return node;
 				}
 			}
 			else
 			{
-				Visit(expression.Left);
-				Visit(expression.Right);
+				Visit(node.Left);
+				Visit(node.Right);
 			}
 			var right = _conditionParts.Pop();
 			var left = _conditionParts.Pop();
 
-			string cond = expression.GetCondition(left, right);
+			string cond = node.GetCondition(left, right);
 
 			if (cond != null) _conditionParts.Push(cond);
-			return expression;
+			return node;
 		}
 
-		protected override Expression VisitConstant(ConstantExpression expression)
+		protected override Expression VisitConstant(ConstantExpression node)
 		{
-			if (expression == null) return expression;
+			if (node == null) return node;
 
-			if (expression.Value == null)
+			if (node.Value == null)
 				_conditionParts.Push(null);
 
 			else
 			{
-				_arguments.Add(expression.Value);
+				_arguments.Add(node.Value);
 				string cond = null;
-				if (expression.IsImplementation<IList>()) //如果是list/array类型
+				if (node.IsImplementation<IList>()) //如果是list/array类型
 				{
-					if (expression.Type.GetElementType() == typeof(string)) //如果是字符串数据, 部分数据库需要强制转换
-						cond = string.Format("CAST({{{0}}} AS {1}[])", _arguments.Count - 1, _dataBaseKind.GetCastBaseStringDbType());
+					if (node.Type.GetElementType() == typeof(string)) //如果是字符串数据, 部分数据库需要强制转换
+						cond = string.Format("CAST({{{0}}} AS {1}[])", _arguments.Count - 1, _converter.CastStringDbType);
 				}
 
 				if (cond == null) cond = string.Format("{{{0}}}", _arguments.Count - 1);
 
 				if (cond != null) _conditionParts.Push(cond);
 			}
-			return expression;
+			return node;
 		}
 
-		protected override Expression VisitMember(MemberExpression expression)
+		protected override Expression VisitMember(MemberExpression node)
 		{
-			if (expression == null) return expression;
+			if (node == null) return node;
 
-			var propertyInfo = expression.Member as PropertyInfo;
-			if (propertyInfo == null) return expression;
+			var propertyInfo = node.Member as PropertyInfo;
+			if (propertyInfo == null) return node;
 
-			if (expression.Expression.NodeType == ExpressionType.Parameter)
+			if (node.Expression.NodeType == ExpressionType.Parameter)
 			{
-				var p = expression.Expression.ToString();
+				var p = node.Expression.ToString();
 
 				// 返回当前表达式里面所有的参数
 				if (!_alias.Contains(p)) _alias.Add(p);
 			}
 
 			// 返回数据库成员字段
-			if (_ifWithQuotationMarks) //是否添加引号
+			if (_converter.QuotationMarks) //是否添加引号
 			{
-				_conditionParts.Push(string.Format("{0}", expression.GetOriginExpression().ToDatebaseField()));
+				_conditionParts.Push(string.Format("{0}", node.GetOriginExpression().ToDatebaseField()));
 			}
 			else
 			{
-				_conditionParts.Push(string.Format("{0}", expression.GetOriginExpression()));
+				_conditionParts.Push(string.Format("{0}", node.GetOriginExpression()));
 			}
 
-			return expression;
+			return node;
 		}
 
-		protected override Expression VisitMethodCall(MethodCallExpression expression)
+		protected override Expression VisitMethodCall(MethodCallExpression node)
 		{
-			if (expression == null) return expression;
+			if (node == null) return node;
 
-			string connectorWords = _dataBaseKind.GetStrConnectWords(); //获取字符串连接符
+			string connector = _converter.StringConnectWord; //获取字符串连接符
 			bool useDefault = true; //是否使用默认表达式访问方式
 
 			string format = null;
 			var not = _conditionParts.TryPop(out var result) ? result : string.Empty; //非运算符
-			switch (expression.Method.Name)
+			switch (node.Method.Name)
 			{
 				case "StartsWith": //Like 'xxx%',
-					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(expression.Arguments), " ''", connectorWords, "{1}", connectorWords, "'%'");
+					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " ''", connector, "{1}", connector, "'%'");
 					break;
 
 				case "Contains": //Like '%xxx%',
-					if (expression.Object?.Type == typeof(string)) //如果是String.Contains, 那么使用like
-						format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(expression.Arguments), " '%'", connectorWords, "{1}", connectorWords, "'%'");
+					if (node.Object?.Type == typeof(string)) //如果是String.Contains, 那么使用like
+						format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " '%'", connector, "{1}", connector, "'%'");
 
 					//其他情况使用 IEnumerable.Contains
 					else
@@ -195,11 +204,11 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 						format = string.Concat("{0} ", opr, " {1}");
 						var method = not == "NOT" ? "ALL" : "ANY";
 
-						for (int i = 0; i < expression.Arguments.Count; i++) //遍历Visit成员表达式
+						for (int i = 0; i < node.Arguments.Count; i++) //遍历Visit成员表达式
 						{
-							Expression arg = expression.Arguments[i];
+							Expression arg = node.Arguments[i];
 							//如果当前表达式是IEnumerable类型, 且不是
-							if (arg.IsImplementation<IEnumerable>() && arg.Type != typeof(string)) 
+							if (arg.IsImplementation<IEnumerable>() && arg.Type != typeof(string))
 							{
 								format = format.Replace($"{{{i}}}", $"{method}({{{i}}})");
 								arg = arg.ToArrayExpression();
@@ -215,7 +224,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 					break;
 
 				case "EndsWith": //Like '%xxx',
-					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(expression.Arguments), " '%'", connectorWords, "{1}", connectorWords, "''");
+					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " '%'", connector, "{1}", connector, "''");
 					break;
 
 				case "Equals":
@@ -223,30 +232,30 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 					break;
 
 				case "ToString": //a.Name.ToString()=>(CAST a.Name AS VARCHAR)
-					if (expression.Object.NodeType != ExpressionType.MemberAccess) goto default;
+					if (node.Object.NodeType != ExpressionType.MemberAccess) goto default;
 					useDefault = false;
 					_conditionParts.Push("CAST(");
-					VisitMember((MemberExpression)expression.Object);
-					_conditionParts.Push(string.Format(" AS {0})", _dataBaseKind.GetCastBaseStringDbType()));
+					VisitMember((MemberExpression)node.Object);
+					_conditionParts.Push(string.Format(" AS {0})", _converter.CastStringDbType));
 					MergeConditionParts();
 					break;
 
 				default: //如果没有特殊的方法解析, 直接返回方法的返回值, 用常量表达式Visit
 					useDefault = false;
-					var constantExpression = expression.GetConstantFromExression(expression.Type);
+					var constantExpression = node.GetConstantFromExression(node.Type);
 					VisitConstant(constantExpression);
 					break;
 			}
 
 			if (useDefault)
 			{
-				Visit(expression.Object);
-				Visit(expression.Arguments[0]);
+				Visit(node.Object);
+				Visit(node.Arguments[0]);
 			}
 
 			if (format != null) MergeConditionParts(format);
 
-			return expression;
+			return node;
 		}
 
 		/// <summary>
@@ -335,6 +344,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			_conditionParts.Clear();
 			_conditionParts.Push(connect);
 		}
+
 		#region 其他
 		//private static string BinarExpressionProvider(Expression left, Expression right, ExpressionType type)
 		//{

@@ -1,8 +1,4 @@
-﻿/* ################################################################################
- * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
- * ################################################################################
- */
-using Creeper.PostgreSql.XUnitTest.Entity.Model;
+﻿using Creeper.PostgreSql.XUnitTest.Entity.Model;
 using System;
 using Newtonsoft.Json.Linq;
 using Npgsql.TypeMapping;
@@ -37,7 +33,6 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Options
 					conn.TypeMapper.UseJsonNetForJtype();
 					conn.TypeMapper.UseCustomXml();
 					conn.TypeMapper.MapEnum<Model.EtDataState>("public.et_data_state", PostgreSqlTranslator.Instance);
-					conn.TypeMapper.MapEnum<Model.EDataState>("public.e_data_state", PostgreSqlTranslator.Instance);
 					conn.TypeMapper.MapComposite<Model.Info>("public.info");
 				}
 			};

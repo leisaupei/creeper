@@ -1,8 +1,4 @@
-﻿/* ################################################################################
- * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
- * ################################################################################
- */
-using System;
+﻿using System;
 using Newtonsoft.Json;
 
 namespace Creeper.PostgreSql.XUnitTest.Entity.Model

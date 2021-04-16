@@ -1,5 +1,6 @@
 # 使用指南
 - [使用者必读注意事项](./Attention.md)
+- [代码生成器配置说明](./CodeMakerDiscription.md)
 - [查询](./Select.md)
 - [关联查询](./JoinQuery.md)
 - [自定义查询](./CustomQuery.md)
@@ -7,6 +8,7 @@
 - [更新](./Update.md)
 - [删除](./Delete.md)
 - [插入](./Insert.md)
+- [增补](./Upsert.md)
 - [事务](./Transaction.md)
 - [DbOption说明](./DbOptions.md)
 - [数据库缓存](./DbCache.md)

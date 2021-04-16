@@ -21,12 +21,12 @@ namespace Creeper.Generic
 		/// <summary>
 		/// 子项扩展
 		/// </summary>
-		internal IList<ICreeperOptionsExtension> Extensions { get; } = new List<ICreeperOptionsExtension>();
+		internal IList<ICreeperDbOptionsExtension> Extensions { get; } = new List<ICreeperDbOptionsExtension>();
 
 		/// <summary>
 		/// 数据库缓存类
 		/// </summary>
-		internal Type DbCacheType = null;
+		internal Type DbCacheType { get; private set; } = null;
 
 		/// <summary>
 		/// 主从策略
@@ -49,18 +49,27 @@ namespace Creeper.Generic
 		/// 添加db类型转换器
 		/// </summary>
 		/// <typeparam name="TDbTypeConvert"></typeparam>
-		public void TryAddDbTypeConvert<TDbTypeConvert>() where TDbTypeConvert : ICreeperDbTypeConverter
+		public void TryAddDbTypeConvert<TDbTypeConvert>() where TDbTypeConvert : ICreeperDbTypeConverter, new()
 		{
 			var convert = Activator.CreateInstance<TDbTypeConvert>();
 			if (!CreeperDbTypeConverters.Any(a => a.DataBaseKind != convert.DataBaseKind))
 				CreeperDbTypeConverters.Add(convert);
 		}
 
+		/// <summary>
+		/// 添加DbCache
+		/// </summary>
+		/// <typeparam name="TDbCache"></typeparam>
 		public void UseCache<TDbCache>() where TDbCache : ICreeperDbCache
 		{
 			DbCacheType = typeof(TDbCache);
 		}
-		public void RegisterExtension(ICreeperOptionsExtension extension)
+
+		/// <summary>
+		/// 注册扩展服务
+		/// </summary>
+		/// <param name="extension"></param>
+		public void RegisterExtension(ICreeperDbOptionsExtension extension)
 		{
 			if (extension == null)
 			{

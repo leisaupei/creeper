@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using Creeper.Driver;
 using Creeper.Generic;
+using System.Collections.ObjectModel;
 
 namespace Creeper.DbHelper
 {
@@ -20,16 +21,6 @@ namespace Creeper.DbHelper
 	public class CreeperDbContext : ICreeperDbContext
 	{
 		#region Private
-		/// <summary>
-		/// 静态数据库类型转换器
-		/// </summary>
-		private static readonly Dictionary<DataBaseKind, ICreeperDbTypeConverter> _dbTypeConverts = new();
-
-		/// <summary>
-		/// 实例键值对
-		/// </summary>
-		private static readonly Dictionary<string, List<ICreeperDbConnectionOption>> _executeOptions = new();
-
 		/// <summary>
 		/// 默认数据库名称
 		/// </summary>
@@ -61,6 +52,7 @@ namespace Creeper.DbHelper
 		{
 			var options = serviceProvider.GetService<IOptions<CreeperOptions>>().Value;
 			var dbCache = serviceProvider.GetService<ICreeperDbCache>();
+
 			if (dbCache != null) DbCache = dbCache;
 
 			DbTypeStrategy = options.DbTypeStrategy;
@@ -70,65 +62,42 @@ namespace Creeper.DbHelper
 			//if (!CreeperOptions.DbOptions?.Any() ?? true)
 			//	throw new ArgumentOutOfRangeException(nameof(CreeperOptions.DbOptions));
 
+			#region Init Options
+			var executeOptions = new Dictionary<string, List<ICreeperDbConnectionOption>>();
+			var dbTypeConverts = new Dictionary<DataBaseKind, ICreeperDbTypeConverter>();
+			var dbTypeConvertsName = new Dictionary<string, ICreeperDbTypeConverter>();
+
+			foreach (var convert in options.CreeperDbTypeConverters)
+			{
+				if (!dbTypeConverts.ContainsKey(convert.DataBaseKind))
+					dbTypeConverts[convert.DataBaseKind] = convert;
+			}
+
 			foreach (var option in options.DbOptions)
 			{
 				if (option.Main == null)
-					throw new ArgumentNullException(nameof(option.Main), $"Connection string model is null");
+					throw new ArgumentNullException(nameof(option.Main), $"Main Connectionstring is null");
 
-				_executeOptions[option.Main.DbName] = new List<ICreeperDbConnectionOption> { option.Main };
+				executeOptions[option.Main.DbName] = new List<ICreeperDbConnectionOption> { option.Main };
+
+				dbTypeConvertsName[option.Main.DbName] = dbTypeConverts[option.Main.DataBaseKind];
 
 				if (option.Secondary == null) continue;
 
 				foreach (var item in option.Secondary)
 				{
-					if (!_executeOptions.ContainsKey(item.DbName))
-						_executeOptions[item.DbName] = new List<ICreeperDbConnectionOption> { item };
+					if (!executeOptions.ContainsKey(item.DbName))
+						executeOptions[item.DbName] = new List<ICreeperDbConnectionOption> { item };
 					else
-						_executeOptions[item.DbName].Add(item);
+						executeOptions[item.DbName].Add(item);
 				}
 			}
 
-			foreach (var convert in options.CreeperDbTypeConverters)
-			{
-				if (!_dbTypeConverts.ContainsKey(convert.DataBaseKind))
-					_dbTypeConverts[convert.DataBaseKind] = convert;
-			}
+			TypeHelper.DbTypeConvertsName = dbTypeConvertsName;
+			TypeHelper.DbTypeConverts = dbTypeConverts;
+			TypeHelper.ExecuteOptions = executeOptions;
+			#endregion
 		}
-
-		/// <summary>
-		/// 通过数据库类型获取转换器
-		/// </summary>
-		/// <param name="dataBaseKind"></param>
-		/// <returns></returns>
-		public static ICreeperDbTypeConverter GetConvert(DataBaseKind dataBaseKind)
-			=> _dbTypeConverts.TryGetValue(dataBaseKind, out var convert)
-			? convert : throw new ArgumentException("没有添加响应的数据库类型转换器");
-
-		#region GetExecute
-		/// <summary>
-		///  获取连接实例
-		/// </summary>
-		/// <typeparam name="TDbName"></typeparam>
-		/// <returns></returns>
-		public ICreeperDbExecute GetExecute<TDbName>() where TDbName : struct, ICreeperDbName
-			=> new CreeperDbExecute(GetExecuteOption(typeof(TDbName)));
-
-		/// <summary>
-		///  获取连接实例
-		/// </summary>
-		/// <param name="type"></param>
-		/// <returns></returns>
-		public ICreeperDbExecute GetExecute(Type type)
-			=> new CreeperDbExecute(GetExecuteOption(type.Name));
-
-		/// <summary>
-		/// 获取连接实例
-		/// </summary>
-		/// <param name="name"></param>
-		/// <returns></returns>
-		public ICreeperDbExecute GetExecute(string name)
-			=> new CreeperDbExecute(GetExecuteOption(name));
-		#endregion
 
 		#region GetExecuteOption
 		/// <summary>
@@ -139,9 +108,9 @@ namespace Creeper.DbHelper
 		/// <returns>对应实例</returns>
 		public static ICreeperDbConnectionOption GetExecuteOption(string name)
 		{
-			if (_executeOptions.ContainsKey(name))
+			if (TypeHelper.ExecuteOptions.ContainsKey(name))
 			{
-				var execute = _executeOptions[name];
+				var execute = TypeHelper.ExecuteOptions[name];
 
 				switch (execute.Count)
 				{
@@ -178,6 +147,32 @@ namespace Creeper.DbHelper
 		/// <returns>对应实例</returns>
 		public static ICreeperDbConnectionOption GetExecuteOption<TDbName>() where TDbName : struct, ICreeperDbName
 			=> GetExecuteOption(typeof(TDbName));
+		#endregion
+
+		#region GetExecute
+		/// <summary>
+		///  获取连接实例
+		/// </summary>
+		/// <typeparam name="TDbName"></typeparam>
+		/// <returns></returns>
+		public ICreeperDbExecute GetExecute<TDbName>() where TDbName : struct, ICreeperDbName
+			=> new CreeperDbExecute(GetExecuteOption(typeof(TDbName)));
+
+		/// <summary>
+		///  获取连接实例
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		public ICreeperDbExecute GetExecute(Type type)
+			=> new CreeperDbExecute(GetExecuteOption(type.Name));
+
+		/// <summary>
+		/// 获取连接实例
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
+		public ICreeperDbExecute GetExecute(string name)
+			=> new CreeperDbExecute(GetExecuteOption(name));
 		#endregion
 
 		#region Transaction

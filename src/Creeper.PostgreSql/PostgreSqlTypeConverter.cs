@@ -5,20 +5,22 @@ using Creeper.Generic;
 using Creeper.PostgreSql.Extensions;
 using Creeper.SqlBuilder;
 using Newtonsoft.Json.Linq;
+using Npgsql;
 using Npgsql.LegacyPostgis;
 using NpgsqlTypes;
 using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Linq;
 
 namespace Creeper.PostgreSql
 {
 	public class PostgreSqlTypeConverter : CreeperDbTypeConvertBase
 	{
-        public override DataBaseKind DataBaseKind =>  DataBaseKind.PostgreSql;
+		public override DataBaseKind DataBaseKind => DataBaseKind.PostgreSql;
 
-        public override T ConvertDbData<T>(object value)
+		public override T ConvertDbData<T>(object value)
 		{
 			return (T)ConvertDbData(value, typeof(T));
 		}
@@ -57,5 +59,8 @@ namespace Creeper.PostgreSql
 		{
 			return TypeHelper.SqlToString(sqlBuilder.CommandText, sqlBuilder.Params);
 		}
+
+		public override DbParameter GetDbParameter(string name, object value)
+			=> new NpgsqlParameter(name, value);
 	}
 }

@@ -1,10 +1,13 @@
-﻿using Creeper.DbHelper;
+﻿using Creeper.Attributes;
+using Creeper.DbHelper;
 using Creeper.Driver;
+using Creeper.Extensions;
 using Creeper.Generic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +17,7 @@ namespace Creeper.SqlBuilder
 	/// update 语句实例
 	/// </summary>
 	/// <typeparam name="TModel"></typeparam>
-	public class UpdateBuilder<TModel> : WhereBuilder<UpdateBuilder<TModel>, TModel>
+	public sealed class UpdateBuilder<TModel> : WhereBuilder<UpdateBuilder<TModel>, TModel>
 		where TModel : class, ICreeperDbModel, new()
 	{
 		#region Fields
@@ -42,6 +45,32 @@ namespace Creeper.SqlBuilder
 		}
 
 		/// <summary>
+		/// 根据实体类主键, 更新数据
+		/// </summary>
+		/// <param name="model"></param>
+		/// <returns></returns>
+		internal UpdateBuilder<TModel> Set(TModel model)
+		{
+			EntityHelper.GetAllFields<TModel>(p =>
+			{
+				string name = DbConverter.WithQuotationMarks(p.Name.ToLower());
+				object value = p.GetValue(model);
+				var column = p.GetCustomAttribute<CreeperDbColumnAttribute>();
+				if (column?.Primary == true)
+				{
+					Where(name + " = {0}", value);
+					return;
+				}
+
+				Set(name, value);
+			});
+			if (WhereCount == 0)
+				throw new NoPrimaryKeyException<TModel>();
+
+			return this;
+		}
+
+		/// <summary>
 		/// 设置字段等于SQL
 		/// </summary>
 		/// <param name="selector">key selector</param>
@@ -62,10 +91,14 @@ namespace Creeper.SqlBuilder
 		/// <param name="value">value</param>
 		/// <param name="isSet">是否设置</param>
 		/// <returns></returns>
-		public UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey>> selector, TKey value, bool isSet = true)
+		public UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey>> selector, TKey value)
 		{
-			if (!isSet) return this;
 			var field = GetSelectorWithoutAlias(selector);
+			return Set(field, value);
+		}
+
+		private UpdateBuilder<TModel> Set(string field, object value)
+		{
 			if (value == null)
 				return AddSetExpression(string.Format("{0} = null", field));
 
@@ -110,9 +143,8 @@ namespace Creeper.SqlBuilder
 		/// <param name="value">value</param>
 		/// <param name="isSet"></param>
 		/// <returns></returns>
-		public UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey?>> selector, TKey? value, bool isSet = true) where TKey : struct
+		public UpdateBuilder<TModel> Set<TKey>(Expression<Func<TModel, TKey?>> selector, TKey? value) where TKey : struct
 		{
-			if (!isSet) return this;
 			var field = GetSelectorWithoutAlias(selector);
 			if (value == null)
 				return AddSetExpression(string.Format("{0} = null", field));
@@ -128,7 +160,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector">key selector</param>
 		/// <param name="value">数组</param>
 		/// <returns></returns>
-		public UpdateBuilder<TModel> Append<TKey>(Expression<Func<TModel, IEnumerable<TKey>>> selector, params TKey[] value)
+		public UpdateBuilder<TModel> Append<TKey>(Expression<Func<TModel, TKey[]>> selector, params TKey[] value) where TKey : struct
 		{
 			AddParameter(out string valueIndex, value);
 			return AddSetExpression(string.Format("{0} = {0} || @{1}", GetSelectorWithoutAlias(selector), valueIndex));
@@ -141,7 +173,7 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector">key selector</param>
 		/// <param name="value">元素</param>
 		/// <returns></returns>
-		public UpdateBuilder<TModel> Remove<TKey>(Expression<Func<TModel, IEnumerable<TKey>>> selector, TKey value)
+		public UpdateBuilder<TModel> Remove<TKey>(Expression<Func<TModel, TKey[]>> selector, TKey value) where TKey : struct
 		{
 			AddParameter(out string valueIndex, value);
 			return AddSetExpression(string.Format("{0} = array_remove({0}, @{1})", GetSelectorWithoutAlias(selector), valueIndex));
@@ -204,7 +236,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public int ToAffectedRows(out TModel refInfo)
 		{
-			ReturnType = PipeReturnType.Rows;
+			ReturnType = PipeReturnType.One;
 			refInfo = base.FirstOrDefault<TModel>();
 			if (refInfo == null) return 0;
 			return 1;
@@ -217,7 +249,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public int ToAffectedRows(out List<TModel> refInfo)
 		{
-			ReturnType = PipeReturnType.Rows;
+			ReturnType = PipeReturnType.List;
 			refInfo = base.ToList<TModel>();
 			return refInfo.Count;
 		}
@@ -236,6 +268,16 @@ namespace Creeper.SqlBuilder
 		{
 			ReturnType = PipeReturnType.One;
 			return base.FirstOrDefault<TModel>();
+		}
+
+		/// <summary>
+		/// 插入数据库并返回数据
+		/// </summary>
+		/// <returns></returns>
+		public Task<TModel> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
+		{
+			ReturnType = PipeReturnType.One;
+			return base.FirstOrDefaultAsync<TModel>(cancellationToken);
 		}
 
 		/// <summary>
@@ -285,13 +327,14 @@ namespace Creeper.SqlBuilder
 				throw new ArgumentNullException(nameof(WhereList));
 			if (_setList.Count == 0)
 				throw new ArgumentNullException(nameof(_setList));
+
 			var ret = string.Empty;
 			if (ReturnType != PipeReturnType.Rows)
 			{
-				Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias);
+				Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias, DbConverter);
 				ret = $"RETURNING {Fields}";
 			}
-			return $"UPDATE {MainTable} {MainAlias} SET {string.Join(",", _setList)} WHERE {string.Join("\nAND", WhereList)} {ret}";
+			return $"UPDATE {MainTable} {MainAlias} SET {string.Join(",", _setList)} WHERE {string.Join(" AND ", WhereList)} {ret}";
 		}
 		#endregion
 	}

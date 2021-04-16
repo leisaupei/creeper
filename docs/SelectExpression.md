@@ -7,9 +7,7 @@
 public partial class PeopleModel : ICreeperDbModel
 {
     //唯一键
-    //自增整型主键此处为
-    //[CreeperDbColumn(PrimaryKey = true, IdentityKey = true, Ignore = IgnoreWhen.Input)]
-    [CreeperDbColumn(PrimaryKey = true)] 
+    [CreeperDbColumn(Primary = true)] 
     public Guid Id { get; set; }
     //年龄
     public int Age { get; set; }
@@ -83,11 +81,12 @@ StudentModel stu = _dbContext.Select<StudentModel>()
     .Where(a => a.Stu_no == 1)
     .Where(a => a.Name == "小明")
     .WhereOrEnd()
+    .Where(a => a.Age == 20)
     .FirstOrDefault();
 ```
 输出的sql语句为
 ``` sql
-SELECT a."id", a."age", a."name" FROM "public"."student" WHERE a."stu_no" = 1 OR a."name" = '小明'
+SELECT a."id", a."age", a."name" FROM "public"."student" WHERE (a."stu_no" = 1 OR a."name" = '小明') AND a."age" = 20
 ```
 ## Where方法lambda表达式的使用支持
 ### IEnumerable.Contains
@@ -114,7 +113,7 @@ List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => a.Name.Con
 ``` sql
 SELECT a."id", a."age", a."name" FROM "public"."student" WHERE a."name" LIKE '%明%'
 ```
-使用IgnoreCase忽略大小写，原理只是把LIKE替换为ILIKE其余一致
+使用``IgnoreCase``忽略大小写，原理只是把``LIKE``替换为``ILIKE``其余一致
 ``` C#
 //使用起始于时, 等价为'小%'
 List<StudentModel> stu = _dbContext.Select<StudentModel>()
@@ -124,7 +123,7 @@ List<StudentModel> stu = _dbContext.Select<StudentModel>()
 ``` sql
 SELECT a."id", a."age", a."name" FROM "public"."student" WHERE a."name" ILIKE '小%'
 ```
-其他方法Contains使用一致不过多赘述
+其他方法``Contains``使用一致不过多赘述
 
 ### 委托/方法
 ``` C#

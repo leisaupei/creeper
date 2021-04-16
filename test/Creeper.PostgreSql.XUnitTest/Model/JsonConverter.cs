@@ -13,7 +13,7 @@ using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Meta.xUnitTest.Model
+namespace Creeper.PostgreSql.XUnitTest.Model
 {
 	public class LowercaseContractResolver : DefaultContractResolver
 	{

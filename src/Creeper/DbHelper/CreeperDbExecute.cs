@@ -211,12 +211,12 @@ namespace Creeper.DbHelper
 			if (async)
 				await ExecuteDataReaderAsync(dr =>
 				{
-					list.Add(CreeperDbContext.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader<T>(dr));
+					list.Add(TypeHelper.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader<T>(dr));
 				}, cmdText, cmdType, cmdParams, cancellationToken);
 			else
 				ExecuteDataReader(dr =>
 				{
-					list.Add(CreeperDbContext.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader<T>(dr));
+					list.Add(TypeHelper.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader<T>(dr));
 				}, cmdText, cmdType, cmdParams);
 			return list;
 		}
@@ -255,7 +255,7 @@ namespace Creeper.DbHelper
 						var item = builders.ElementAt(i);
 						List<object> list = new List<object>();
 						while (await dr.ReadAsync(cancellationToken))
-							list.Add(CreeperDbContext.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader(dr, item.Type));
+							list.Add(TypeHelper.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader(dr, item.Type));
 
 						results[i] = GetResult(dr, item, list);
 
@@ -270,7 +270,7 @@ namespace Creeper.DbHelper
 						var item = builders.ElementAt(i);
 						List<object> list = new List<object>();
 						while (dr.Read())
-							list.Add(CreeperDbContext.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader(dr, item.Type));
+							list.Add(TypeHelper.GetConvert(ConnectionOptions.DataBaseKind).ConvertDataReader(dr, item.Type));
 
 						results[i] = GetResult(dr, item, list);
 
@@ -336,16 +336,16 @@ namespace Creeper.DbHelper
 		/// <summary>
 		/// 回滚事务
 		/// </summary>
-		public void RollBackTransaction()
-			=> RollBackTransactionAsync(false, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+		public void RollbackTransaction()
+			=> RollbackTransactionAsync(false, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
 
 		/// <summary>
 		/// 回滚事务
 		/// </summary>
-		public ValueTask RollBackTransactionAsync(CancellationToken cancellationToken = default)
-			=> cancellationToken.IsCancellationRequested ? new ValueTask(Task.FromCanceled(cancellationToken)) : RollBackTransactionAsync(true, cancellationToken);
+		public ValueTask RollbackTransactionAsync(CancellationToken cancellationToken = default)
+			=> cancellationToken.IsCancellationRequested ? new ValueTask(Task.FromCanceled(cancellationToken)) : RollbackTransactionAsync(true, cancellationToken);
 
-		private async ValueTask RollBackTransactionAsync(bool async, CancellationToken cancellationToken)
+		private async ValueTask RollbackTransactionAsync(bool async, CancellationToken cancellationToken)
 		{
 			using (_trans)
 			{
@@ -395,8 +395,8 @@ namespace Creeper.DbHelper
 			}
 			catch (Exception ex)
 			{
-				if (async) await RollBackTransactionAsync(cancellationToken);
-				else RollBackTransaction();
+				if (async) await RollbackTransactionAsync(cancellationToken);
+				else RollbackTransaction();
 				throw ex;
 			}
 		}

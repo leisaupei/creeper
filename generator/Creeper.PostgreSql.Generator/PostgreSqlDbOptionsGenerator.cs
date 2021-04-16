@@ -121,7 +121,7 @@ INNER JOIN pg_attribute c on c.attrelid = b.oid and c.attnum > 0
 INNER JOIN pg_type d on d.oid = c.atttypid
 INNER JOIN pg_namespace ns on ns.oid = a.typnamespace
 LEFT JOIN pg_namespace ns2 on ns2.oid = d.typnamespace
-WHERE ns.nspname || '.' || a.typname not in ({Types.ConvertArrayToSql(_postgresExcepts.Global.Composites)})
+WHERE {GenerateHelper.ExceptConvert("ns.nspname || '.' || a.typname",_postgresExcepts.Global.Composites)}
 ";
 			Dictionary<string, string> dic = new Dictionary<string, string>();
 			List<CompositeTypeInfo> composites = new List<CompositeTypeInfo>();
