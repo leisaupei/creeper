@@ -5,6 +5,7 @@ using Creeper.SqlBuilder;
 using System;
 using System.Collections;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 
@@ -19,6 +20,12 @@ namespace Creeper.Driver
 		/// 
 		/// </summary>
 		public abstract DataBaseKind DataBaseKind { get; }
+
+		public virtual string CastStringDbType => "VARCHAR";
+
+		public virtual string StringConnectWord => "||";
+
+		public virtual bool QuotationMarks => true;
 
 		/// <summary>
 		/// 
@@ -166,5 +173,6 @@ namespace Creeper.Driver
 		/// <param name="sqlBuilder"></param>
 		/// <returns></returns>
 		public abstract string ConvertSqlToString(ISqlBuilder sqlBuilder);
+		public abstract DbParameter GetDbParameter(string name, object value);
 	}
 }

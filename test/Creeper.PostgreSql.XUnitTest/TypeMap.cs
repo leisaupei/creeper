@@ -35,7 +35,7 @@ namespace Creeper.PostgreSql.XUnitTest
 				Date_type = DateTime.Now.Date,
 				Id = Guid.NewGuid(),
 				Decimal_type = 1.1M,
-				Enum_type = EDataState.正常,
+				Enum_type = EtDataState.正常,
 				Float4_type = 1.1f,
 				Float8_type = 1.1,
 				Hstore_type = new Dictionary<string, string> { { "name", _name } },
@@ -161,7 +161,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact]
 		public void Enum()
 		{
-			var affrows = _dbContext.Update<TypeTestModel>().Where(a => a.Id == Guid.Empty).Set(a => a.Enum_type, EDataState.已删除).ToAffectedRows();
+			var affrows = _dbContext.Update<TypeTestModel>().Where(a => a.Id == Guid.Empty).Set(a => a.Enum_type, EtDataState.删除).ToAffectedRows();
 			Assert.True(affrows > 0);
 		}
 

@@ -33,7 +33,7 @@ namespace Creeper.Generic
 		/// </summary>
 		Secondary
 	}
-	
+
 	/// <summary>
 	/// 缓存策略, 仅支持FirstOrDefault与ToScalar方法
 	/// </summary>

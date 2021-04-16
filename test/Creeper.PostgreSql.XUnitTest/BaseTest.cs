@@ -1,5 +1,4 @@
-﻿using Meta.xUnitTest.Model;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -44,25 +43,25 @@ namespace Creeper.PostgreSql.XUnitTest
 				var serviceProvider = services.BuildServiceProvider();
 				_dbContext = serviceProvider.GetService<ICreeperDbContext>();
 
-				JsonConvert.DefaultSettings = () =>
-				{
-					var st = new JsonSerializerSettings
-					{
-						Formatting = Formatting.Indented,
-					};
-					st.Converters.Add(new StringEnumConverter());
-					st.Converters.Add(new IPConverter());
-					st.Converters.Add(new PhysicalAddressConverter());
-					st.Converters.Add(new NpgsqlTsQueryConverter());
-					st.Converters.Add(new NpgsqlTsVectorConverter());
-					st.Converters.Add(new BitArrayConverter());
-					st.Converters.Add(new NpgsqlPointListConverter());
-					st.Converters.Add(new BooleanConverter());
-					st.Converters.Add(new DateTimeConverter());
+				//JsonConvert.DefaultSettings = () =>
+				//{
+				//	var st = new JsonSerializerSettings
+				//	{
+				//		Formatting = Formatting.Indented,
+				//	};
+				//	st.Converters.Add(new StringEnumConverter());
+				//	st.Converters.Add(new IPConverter());
+				//	st.Converters.Add(new PhysicalAddressConverter());
+				//	st.Converters.Add(new NpgsqlTsQueryConverter());
+				//	st.Converters.Add(new NpgsqlTsVectorConverter());
+				//	st.Converters.Add(new BitArrayConverter());
+				//	st.Converters.Add(new NpgsqlPointListConverter());
+				//	st.Converters.Add(new BooleanConverter());
+				//	st.Converters.Add(new DateTimeConverter());
 
-					st.ContractResolver = new LowercaseContractResolver();
-					return st;
-				};
+				//	st.ContractResolver = new LowercaseContractResolver();
+				//	return st;
+				//};
 			}
 		}
 

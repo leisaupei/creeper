@@ -31,16 +31,18 @@ namespace Creeper.Driver
 		/// </summary>
 		/// <param name="key"></param>
 		/// <param name="value"></param>
+		/// <param name="expireTime">取决于<see cref="SqlBuilder.SqlBuilder{TBuilder, TModel}.ByCache(TimeSpan?)"/>expireTime参数</param>
 		/// <returns>是否设置成功</returns>
-		bool Set(string key, object value);
+		bool Set(string key, object value, TimeSpan? expireTime = null);
 
 		/// <summary>
 		/// 设置key值
 		/// </summary>
 		/// <param name="key"></param>
 		/// <param name="value"></param>
+		/// <param name="expireTime">取决于<see cref="SqlBuilder.SqlBuilder{TBuilder, TModel}.ByCache(TimeSpan?)"/>expireTime参数</param>
 		/// <returns>是否设置成功</returns>
-		Task<bool> SetAsync(string key, object value);
+		Task<bool> SetAsync(string key, object value, TimeSpan? expireTime = null);
 
 		/// <summary>
 		/// 检查key存在状态
@@ -60,7 +62,7 @@ namespace Creeper.Driver
 		/// 移除key
 		/// </summary>
 		/// <param name="keys"></param>
-		void Remove(params string[]  keys);
+		void Remove(params string[] keys);
 
 		/// <summary>
 		/// 移除key

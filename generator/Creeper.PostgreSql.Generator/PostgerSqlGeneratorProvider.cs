@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Creeper.PostgreSql.Generator
 {
-	public class PostgerSqlGeneratorProvider : ICreeperGeneratorProvider
+	public class PostgerSqlGeneratorProvider : CreeperGeneratorProviderBase
 	{
 		private readonly PostgresExcepts _postgresExcepts;
 
@@ -20,15 +20,10 @@ namespace Creeper.PostgreSql.Generator
 			_postgresExcepts = optionsAccessor.Value;
 		}
 
-		public DataBaseKind DataBaseKind => DataBaseKind.PostgreSql;
+		public override DataBaseKind DataBaseKind => DataBaseKind.PostgreSql;
 
-		public void ModelGenerator(string modelPath, GenerateOption option, ICreeperDbConnectionOption dbOption, bool folder)
+		public override void Generate(string modelPath, GenerateOption option, ICreeperDbConnectionOption dbOption, bool folder, CreeperDbExecute execute)
 		{
-			if (folder) modelPath = Path.Combine(modelPath, dbOption.DbName);
-
-			CreeperGenerator.RecreateDir(modelPath);
-
-			var execute = new CreeperDbExecute(dbOption);
 			var schemaList = GetSchemas(execute);
 			foreach (var schemaName in schemaList)
 			{
@@ -37,14 +32,14 @@ namespace Creeper.PostgreSql.Generator
 				{
 					TableViewGenerator td = new TableViewGenerator(execute, folder);
 					td.Generate(option.ProjectName, modelPath, schemaName, item, dbOption.DbName);
-					td.ModelGenerator();
 				}
 			}
 			var enumsDal = new PostgreSqlDbOptionsGenerator(execute, _postgresExcepts, folder);
-			enumsDal.Generate(Path.Combine(option.OutputPath, option.ProjectName + "." + CreeperGenerator.DbStandardSuffix), modelPath, option.ProjectName, dbOption.DbName);
+			var rootPath = Path.Combine(option.OutputPath, option.ProjectName + "." + CreeperGenerator.DbStandardSuffix);
+			enumsDal.Generate(rootPath, modelPath, option.ProjectName, dbOption.DbName);
 		}
 
-		public ICreeperDbConnectionOption GetDbConnectionOptionFromString(string conn)
+		public override ICreeperDbConnectionOption GetDbConnectionOptionFromString(string conn)
 		{
 			var strings = conn.Split(';');
 			var connectionString = string.Empty;
@@ -81,7 +76,7 @@ namespace Creeper.PostgreSql.Generator
 			string sql = $@"
 				SELECT SCHEMA_NAME AS schemaname 
 				FROM information_schema.schemata a  
-				WHERE SCHEMA_NAME NOT IN ({Types.ConvertArrayToSql(_postgresExcepts.Global.Schemas)})  
+				WHERE {GenerateHelper.ExceptConvert("SCHEMA_NAME", _postgresExcepts.Global.Schemas)}
 				ORDER BY SCHEMA_NAME";
 
 			return execute.ExecuteDataReaderList<string>(sql);
@@ -99,22 +94,21 @@ namespace Creeper.PostgreSql.Generator
 				FROM pg_tables a  
 				LEFT JOIN pg_class b on a.tablename = b.relname AND b.relkind in ('r','p') 
 				INNER JOIN pg_namespace c on c.oid = b.relnamespace AND c.nspname = a.schemaname
-				WHERE tablename NOT IN ({Types.ConvertArrayToSql(_postgresExcepts.Global.Tables)})
+				WHERE {GenerateHelper.ExceptConvert("schemaname ||'.'||tablename", _postgresExcepts.Global.Tables)}
 				AND schemaname = '{schemaName}'
-				AND tablename NOT LIKE '%copy%'  
 				UNION (
 					SELECT viewname AS name,'view' AS type, CAST(obj_description(b.oid,'pg_class') AS VARCHAR) AS description
 					FROM pg_views a  
 					LEFT JOIN pg_class b on a.viewname = b.relname AND b.relkind = 'v' 
 					INNER JOIN pg_namespace c on c.oid = b.relnamespace AND c.nspname = a.schemaname
-					WHERE viewname NOT IN ({Types.ConvertArrayToSql(_postgresExcepts.Global.Views)})
+					WHERE {GenerateHelper.ExceptConvert("schemaname ||'.'||viewname", _postgresExcepts.Global.Views)}
 					AND schemaname = '{schemaName}'
 				)  
 			";
 			return execute.ExecuteDataReaderList<TableViewModel>(sql);
 		}
 
-		public Action GetFinallyGen()
+		public override Action GetFinallyGen()
 		{
 			return PostgreSqlDbOptionsGenerator.WritePostgreSqlDbOptions;
 		}

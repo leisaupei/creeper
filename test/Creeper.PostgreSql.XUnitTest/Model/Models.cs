@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Meta.xUnitTest.Model
+namespace Creeper.PostgreSql.XUnitTest.Model
 {
 	public class ToOneTTestModel
 	{

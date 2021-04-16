@@ -8,7 +8,7 @@
 public partial class StudentModel : ICreeperDbModel
 {
     //唯一键
-    [CreeperDbColumn(PrimaryKey = true)]
+    [CreeperDbColumn(Primary = true)]
     public Guid Id { get; set; }
     //学号
     public string Name { get; set; }
@@ -23,7 +23,7 @@ public partial class StudentModel : ICreeperDbModel
 [CreeperDbTable(@"""public"".""grade""", typeof(DbMain))]
 public partial class GradeModel : ICreeperDbModel
 {
-    [CreeperDbColumn(PrimaryKey = true)]
+    [CreeperDbColumn(Primary = true)]
     public Guid Id { get; set; }
     //班级名称
     public string Name { get; set; }
@@ -33,7 +33,7 @@ public partial class GradeModel : ICreeperDbModel
 [CreeperDbTable(@"""public"".""teacher""", typeof(DbMain))]
 public partial class TeacherModel : ICreeperDbModel
 {
-    [CreeperDbColumn(PrimaryKey = true)]
+    [CreeperDbColumn(Primary = true)]
     public Guid Id { get; set; }
     //班级名称
     public string Name { get; set; }
@@ -43,7 +43,7 @@ public partial class TeacherModel : ICreeperDbModel
 ## 单级联表查询
 返回班级名称是软件技术的所有学生
 - 注意此处``(a,b)``代表了两个表的别名，详见[使用者必读注意事项](./Attention.md) <br>
-- 在条件``Where<GradeModel>``需要检索b表用到字段时，需要添加b表泛型，且lambda表达式需要以b为[ParameterExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)
+- 在条件``Where<GradeModel>``需要检索b表用到字段时，需要添加b表泛型，且lambda表达式需要以b为[``ParameterExpression``](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)
 - ToList方法只会返回主表的所有列
 ``` C#
 List<StudentModel> stus = _dbContext.Select<StudentModel>()
@@ -57,7 +57,7 @@ List<StudentModel> stus = _dbContext.Select<StudentModel>()
 ## 多级联表查询
 查出名字是小明所在班级教师的名称
 - 此处``InnerJoin<T1>``和``InnerJoin<T1, T2>``，前者是关联主表，后者是需要关联次表的情况下使用
-- 关联此表的[ParameterExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)需要符合别名规范，详见[使用者必读注意事项](./Attention.md)
+- 关联此表的[``ParameterExpression``](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)需要符合别名规范，详见[使用者必读注意事项](./Attention.md)
 ``` C#
 TeacherModel teacher = _dbContext.Select<TeacherModel>()
     .InnerJoin<GradeModel>((a, b) => a.Id == b.Teacher_id))

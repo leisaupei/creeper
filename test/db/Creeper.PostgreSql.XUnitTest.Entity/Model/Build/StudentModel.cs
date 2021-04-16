@@ -1,8 +1,4 @@
-﻿/* ################################################################################
- * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
- * ################################################################################
- */
-using Creeper.Driver;
+﻿using Creeper.Driver;
 using System;
 using System.Collections.Generic;
 using System.Collections;

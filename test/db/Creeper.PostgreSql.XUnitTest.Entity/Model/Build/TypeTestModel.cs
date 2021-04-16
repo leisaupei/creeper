@@ -1,8 +1,4 @@
-﻿/* ################################################################################
- * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper
- * ################################################################################
- */
-using Creeper.Driver;
+﻿using Creeper.Driver;
 using System;
 using System.Collections.Generic;
 using System.Collections;
@@ -99,8 +95,6 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 
 		public Dictionary<string, string> Hstore_type { get; set; }
 
-		public EDataState? Enum_type { get; set; }
-
 		public Info Composite_type { get; set; }
 
 		public BitArray Bit_length_type { get; set; }
@@ -119,6 +113,8 @@ namespace Creeper.PostgreSql.XUnitTest.Entity.Model
 		public Guid[] Uuid_array_type { get; set; }
 
 		public string[] Varchar_array_type { get; set; }
+
+		public EtDataState? Enum_type { get; set; }
 		#endregion
 	}
 }

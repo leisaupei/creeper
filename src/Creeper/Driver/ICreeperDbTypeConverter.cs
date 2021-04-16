@@ -3,6 +3,7 @@ using Creeper.SqlBuilder;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Text;
 
 namespace Creeper.Driver
@@ -13,6 +14,21 @@ namespace Creeper.Driver
 		/// 数据库种类
 		/// </summary>
 		DataBaseKind DataBaseKind { get; }
+
+		/// <summary>
+		/// 数据库对应的字符串类型
+		/// </summary>
+		string CastStringDbType { get; }
+
+		/// <summary>
+		/// 数据库字符串连接符
+		/// </summary>
+		string StringConnectWord { get; }
+
+		/// <summary>
+		/// 字段是否添加双引号
+		/// </summary>
+		bool QuotationMarks { get; }
 
 		/// <summary>
 		/// 转化数据库返回值
@@ -52,5 +68,13 @@ namespace Creeper.Driver
 		/// <param name="sqlBuilder"></param>
 		/// <returns></returns>
 		string ConvertSqlToString(ISqlBuilder sqlBuilder);
+
+		/// <summary>
+		/// 获取dbparameter
+		/// </summary>
+		/// <param name="name"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		DbParameter GetDbParameter(string name, object value);
 	}
 }

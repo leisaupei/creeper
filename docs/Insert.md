@@ -5,9 +5,7 @@
 public partial class PeopleModel : ICreeperDbModel
 {
     //唯一键
-    //自增整型主键此处为
-    //[CreeperDbColumn(PrimaryKey = true, IdentityKey = true, Ignore = IgnoreWhen.Input)]
-    [CreeperDbColumn(PrimaryKey = true)] 
+    [CreeperDbColumn(Primary = true)] 
     public Guid Id { get; set; }
     //年龄
     public int Age { get; set; }

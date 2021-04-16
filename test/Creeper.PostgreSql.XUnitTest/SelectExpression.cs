@@ -1,5 +1,6 @@
 using Creeper.Extensions;
 using Creeper.PostgreSql.XUnitTest.Entity.Model;
+using Creeper.SqlBuilder;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
@@ -19,11 +20,11 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact]
 		public void WherePk()
 		{
-			var people = new PeopleModel { Id = StuPeopleId1, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EDataState.正常, Address_detail = new JObject() };
-			var peoples = new PeopleModel { Id = StuPeopleId2, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EDataState.正常, Address_detail = new JObject() };
-			var aff = _dbContext.Update(new[] { people, peoples }).Set(a => a.Name, "sss").ToAffectedRows();
+			var people = new PeopleModel { Id = StuPeopleId1, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EtDataState.正常, Address_detail = new JObject() };
+			var peoples = new PeopleModel { Id = StuPeopleId2, Address = "xxx", Age = 1, Create_time = DateTime.Now, Name = "lsp", Sex = true, State = EtDataState.正常, Address_detail = new JObject() };
+			var aff = _dbContext.UpdateOnly(new[] { people, peoples });
 		}
-		
+
 		[Fact]
 		public void OrderBy()
 		{
@@ -64,6 +65,9 @@ namespace Creeper.PostgreSql.XUnitTest
 		{
 			var info = _dbContext.Select<StudentModel>()
 				.WhereExists(_dbContext.Select<PeopleModel>().Field(b => b.Id).Where(b => b.Id == StuPeopleId1))
+				.FirstOrDefault();
+			info = _dbContext.Select<StudentModel>()
+				.WhereExists(SelectBuilder<PeopleModel>.Select(b => b.Id).Where(b => b.Id == StuPeopleId1))
 				.FirstOrDefault();
 		}
 		[Fact]
@@ -246,11 +250,11 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact]
 		public void WhereEnum()
 		{
-			EDataState value = EDataState.正常;
+			EtDataState value = EtDataState.正常;
 			var info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == value).FirstOrDefault();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == EDataState.正常).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Enum_type == EtDataState.正常).FirstOrDefault();
 			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)value).FirstOrDefault();
-			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)EDataState.正常).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => a.Int4_type == (int)EtDataState.正常).FirstOrDefault();
 			Assert.NotNull(info);
 		}
 		[Fact]
@@ -282,7 +286,7 @@ namespace Creeper.PostgreSql.XUnitTest
 			info = _dbContext.Select<TypeTestModel>().Where(a => new int[] { 2, 3 }.Select(f => f).Contains(a.Int4_type.Value)).FirstOrDefault();
 			Assert.NotNull(info);
 
-			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { (int)EDataState.已删除, (int)EDataState.正常 }.Contains(a.Int4_type.Value)).FirstOrDefault();
+			info = _dbContext.Select<TypeTestModel>().Where(a => new[] { (int)EtDataState.删除, (int)EtDataState.正常 }.Contains(a.Int4_type.Value)).FirstOrDefault();
 
 			Assert.NotNull(info);
 		}

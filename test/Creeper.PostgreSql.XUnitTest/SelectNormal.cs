@@ -2,9 +2,9 @@
 using Creeper.Extensions;
 using Creeper.PostgreSql.XUnitTest.Entity.Model;
 using Creeper.PostgreSql.XUnitTest.Entity.Options;
+using Creeper.PostgreSql.XUnitTest.Model;
 using Creeper.SqlBuilder;
 using Meta.xUnitTest.Extensions;
-using Meta.xUnitTest.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -51,7 +51,8 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact, Order(5)]
 		public void FristTuple()
 		{
-			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).FirstOrDefault<(Guid id, string name)>("id,name");
+			var info = _dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1)
+				.FirstOrDefault<(Guid id, string name)>(a => new { a.Id, a.Name });
 			// if not found
 			var notFoundInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).FirstOrDefault<(Guid id, string name)>("id,name");
 			var notFoundNullableInfo = _dbContext.Select<PeopleModel>().Where(a => a.Id == Guid.Empty).FirstOrDefault<(Guid? id, string name)>("id,name");
@@ -66,7 +67,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void SelectByDbCache()
 		{
 			Stopwatch sw = Stopwatch.StartNew();
-			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().FirstOrDefault();
+			var info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache(TimeSpan.FromMinutes(2)).FirstOrDefault();
 
 			var a = sw.ElapsedMilliseconds.ToString();
 			info = _dbContext.Select<StudentModel>().Where(a => a.Stu_no == StuNo1).ByCache().FirstOrDefault();
@@ -132,7 +133,7 @@ namespace Creeper.PostgreSql.XUnitTest
 		public void ToPipe()
 		{
 			object[] obj = _dbContext.GetExecute<DbSecondary>().ExecuteDataReaderPipe(new ISqlBuilder[] {
-				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList(),
+				SelectBuilder<PeopleModel>.Select().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList(),
 				_dbContext.Select<PeopleModel>().Where(a => a.Id == StuPeopleId1).PipeFirstOrDefault<(Guid, string)>("id,name"),
 				_dbContext.Select<PeopleModel>().Where(a =>a.Id==StuPeopleId1).PipeToList<(Guid, string)>("id,name"),
 				_dbContext.Select<PeopleModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList<Dictionary<string, object>>("name,id"),
@@ -197,27 +198,27 @@ namespace Creeper.PostgreSql.XUnitTest
 		[Fact, Order(19)]
 		public void GroupBy()
 		{
-
+			var result = _dbContext.Select<StudentModel>().GroupBy(a => a.Grade_id).ToList(a => a.Grade_id);
 		}
 		[Fact, Order(20)]
 		public void Page()
 		{
-
+			var result = _dbContext.Select<StudentModel>().Page(1, 10).ToList();
 		}
 		[Fact, Order(21)]
 		public void Limit()
 		{
-
+			var result = _dbContext.Select<StudentModel>().Take(10).ToList();
 		}
 		[Fact, Order(22)]
 		public void Skip()
 		{
-
+			var result = _dbContext.Select<StudentModel>().Skip(10).ToList();
 		}
 		[Fact, Order(23), Description("using with group by expression")]
 		public void Having()
 		{
-
+			var result = _dbContext.Select<StudentModel>().GroupBy(a => a.Grade_id).Having("COUNT(1) >= 10").ToList(a => a.Grade_id);
 		}
 		[Fact, Order(24), Description("")]
 		public void Union()

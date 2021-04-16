@@ -47,13 +47,13 @@ namespace Creeper.PostgreSql.XUnitTest.Extensions
 
 		public Task RemoveAsync(params string[] keys) { Remove(keys); return Task.CompletedTask; }
 
-		public bool Set(string key, object value)
+		public bool Set(string key, object value, TimeSpan? expireTime = null)
 		{
 			_redisStorage[key] = value;
 			return true;
 		}
 
-		public Task<bool> SetAsync(string key, object value) => Task.FromResult(Set(key, value));
+		public Task<bool> SetAsync(string key, object value, TimeSpan? expireTime = null) => Task.FromResult(Set(key, value, expireTime));
 
 		public void Dispose()
 		{

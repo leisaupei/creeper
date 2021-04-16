@@ -6,9 +6,9 @@ DO
 $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type typ INNER JOIN pg_namespace nsp ON nsp.oid = typ.typnamespace
-		WHERE nsp.nspname = 'public'	AND typ.typname = 'e_data_state') 
+		WHERE nsp.nspname = 'public'	AND typ.typname = 'et_data_state') 
 	THEN
-    CREATE TYPE "public"."e_data_state" AS ENUM ('正常','已删除');
+    CREATE TYPE "public"."et_data_state" AS ENUM ('正常','删除');
   END IF;
 END;
 $$
@@ -46,7 +46,7 @@ CREATE TABLE if not exists "people" (
 "create_time" timestamp(6) NOT NULL,
 "address" varchar(255) COLLATE "default",
 "address_detail" jsonb NOT NULL DEFAULT '{}'::jsonb,
-"state" "public"."e_data_state" NOT NULL DEFAULT '正常'::e_data_state,
+"state" "public"."et_data_state" NOT NULL DEFAULT '正常'::et_data_state,
 CONSTRAINT "people_pkey" PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
@@ -129,7 +129,7 @@ CREATE TABLE if not exists "type_test" (
 "varchar_type" varchar COLLATE "default",
 "xml_type" xml,
 "hstore_type" "public"."hstore",
-"enum_type" "public"."e_data_state",
+"enum_type" "public"."et_data_state",
 "composite_type" "public"."info",
 "bit_length_type" bit(8),
 "array_type" int4[],
@@ -147,3 +147,123 @@ CONSTRAINT "grade_pkey" PRIMARY KEY ("id")
 )
 WITHOUT OIDS;
 COMMENT ON COLUMN "class"."grade"."name" IS '班级名称';
+
+-- ----------------------------
+-- Sequence structure for iden_nopk_name_no_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "test"."iden_nopk_name_no_seq";
+CREATE SEQUENCE "test"."iden_nopk_name_no_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for iden_pk_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "test"."iden_pk_id_seq";
+CREATE SEQUENCE "test"."iden_pk_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Sequence structure for uuid_iden_pk_id_sec_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "test"."uuid_iden_pk_id_sec_seq";
+CREATE SEQUENCE "test"."uuid_iden_pk_id_sec_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 1;
+
+-- ----------------------------
+-- Table structure for iden_nopk
+-- ----------------------------
+DROP TABLE IF EXISTS "test"."iden_nopk";
+CREATE TABLE "test"."iden_nopk" (
+  "id" uuid NOT NULL,
+  "name" varchar(255) COLLATE "pg_catalog"."default",
+  "age" int4,
+  "name_no" int4 NOT NULL DEFAULT nextval('"test".iden_nopk_name_no_seq'::regclass)
+)
+;
+COMMENT ON COLUMN "test"."iden_nopk"."name" IS '名字';
+COMMENT ON COLUMN "test"."iden_nopk"."age" IS '年龄';
+
+-- ----------------------------
+-- Table structure for iden_pk
+-- ----------------------------
+DROP TABLE IF EXISTS "test"."iden_pk";
+CREATE TABLE "test"."iden_pk" (
+  "id" int4 NOT NULL DEFAULT nextval('"test".iden_pk_id_seq'::regclass),
+  "name" varchar(255) COLLATE "pg_catalog"."default",
+  "age" int4
+)
+;
+COMMENT ON COLUMN "test"."iden_pk"."name" IS '名字';
+COMMENT ON COLUMN "test"."iden_pk"."age" IS '年龄';
+
+-- ----------------------------
+-- Table structure for uuid_iden_pk
+-- ----------------------------
+DROP TABLE IF EXISTS "test"."uuid_iden_pk";
+CREATE TABLE "test"."uuid_iden_pk" (
+  "id" uuid NOT NULL,
+  "name" varchar(255) COLLATE "pg_catalog"."default",
+  "age" int4,
+  "id_sec" int4 NOT NULL DEFAULT nextval('"test".uuid_iden_pk_id_sec_seq'::regclass)
+)
+;
+COMMENT ON COLUMN "test"."uuid_iden_pk"."name" IS '名字';
+COMMENT ON COLUMN "test"."uuid_iden_pk"."age" IS '年龄';
+
+-- ----------------------------
+-- Table structure for uuid_pk
+-- ----------------------------
+DROP TABLE IF EXISTS "test"."uuid_pk";
+CREATE TABLE "test"."uuid_pk" (
+  "id" uuid NOT NULL,
+  "name" varchar(255) COLLATE "pg_catalog"."default",
+  "age" int4
+)
+;
+COMMENT ON COLUMN "test"."uuid_pk"."name" IS '名字';
+COMMENT ON COLUMN "test"."uuid_pk"."age" IS '年龄';
+
+-- ----------------------------
+-- Alter sequences owned by
+-- ----------------------------
+ALTER SEQUENCE "test"."iden_nopk_name_no_seq"
+OWNED BY "test"."iden_nopk"."name_no";
+SELECT setval('"test"."iden_nopk_name_no_seq"', 3, true);
+ALTER SEQUENCE "test"."iden_pk_id_seq"
+OWNED BY "test"."iden_pk"."id";
+SELECT setval('"test"."iden_pk_id_seq"', 7, true);
+ALTER SEQUENCE "test"."uuid_iden_pk_id_sec_seq"
+OWNED BY "test"."uuid_iden_pk"."id_sec";
+SELECT setval('"test"."uuid_iden_pk_id_sec_seq"', 7, true);
+
+-- ----------------------------
+-- Primary Key structure for table iden_nopk
+-- ----------------------------
+ALTER TABLE "test"."iden_nopk" ADD CONSTRAINT "iden_nopk_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table iden_pk
+-- ----------------------------
+ALTER TABLE "test"."iden_pk" ADD CONSTRAINT "iden_pk_pkey" PRIMARY KEY ("id");
+
+-- ----------------------------
+-- Primary Key structure for table uuid_iden_pk
+-- ----------------------------
+ALTER TABLE "test"."uuid_iden_pk" ADD CONSTRAINT "uuid_iden_pk_pkey" PRIMARY KEY ("id", "id_sec");
+
+-- ----------------------------
+-- Primary Key structure for table uuid_pk
+-- ----------------------------
+ALTER TABLE "test"."uuid_pk" ADD CONSTRAINT "uuid_pk_pkey" PRIMARY KEY ("id");

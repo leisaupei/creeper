@@ -15,7 +15,7 @@ namespace Creeper.SqlBuilder
 	/// select 语句实例
 	/// </summary>
 	/// <typeparam name="TModel"></typeparam>
-	public class SelectBuilder<TModel> : WhereBuilder<SelectBuilder<TModel>, TModel>
+	public sealed class SelectBuilder<TModel> : WhereBuilder<SelectBuilder<TModel>, TModel>
 		where TModel : class, ICreeperDbModel, new()
 	{
 		#region Identity
@@ -28,10 +28,13 @@ namespace Creeper.SqlBuilder
 		private string _tablesampleSystem;
 		private string _distinctOn;
 		private string _except;
+		private string _intersect;
 		private readonly List<UnionModel> _unions = new List<UnionModel>();
 		#endregion
 
 		#region Constructor
+		internal SelectBuilder() : base(dbContext: null) { }
+
 		internal SelectBuilder(ICreeperDbContext dbContext) : base(dbContext) { }
 
 		internal SelectBuilder(ICreeperDbExecute dbExecute) : base(dbExecute) { }
@@ -193,6 +196,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> Union(string view)
 		{
+			if (string.IsNullOrEmpty(_union)) _union += Environment.NewLine;
 			_union = $"UNION({view})";
 			return this;
 		}
@@ -212,6 +216,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> UnionAll(string view)
 		{
+			if (string.IsNullOrEmpty(_union)) _union += Environment.NewLine;
 			_union += $"UNION ALL({view})";
 			return this;
 		}
@@ -231,7 +236,8 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> Except(string view)
 		{
-			_except = $"({view})";
+			if (string.IsNullOrEmpty(_except)) _except += Environment.NewLine;
+			_except = $"EXCEPT ({view})";
 			return this;
 		}
 
@@ -250,7 +256,8 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public SelectBuilder<TModel> Intersect(string view)
 		{
-			_except = $"({view})";
+			if (string.IsNullOrEmpty(_intersect)) _intersect += Environment.NewLine;
+			_intersect += $"INTERSECT ({view})";
 			return this;
 		}
 
@@ -350,6 +357,12 @@ namespace Creeper.SqlBuilder
 		/// <summary>
 		/// 返回列表
 		/// </summary>
+		/// <returns></returns>
+		public List<TModel> ToList() => ToList<TModel>();
+
+		/// <summary>
+		/// 返回列表
+		/// </summary>
 		/// <typeparam name="TKey"></typeparam>
 		/// <param name="selector"></param>
 		/// <returns></returns>
@@ -363,13 +376,26 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <returns></returns>
 		public List<TKey> ToList<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
-			=> ToList<TKey>(GetSelector(selector));
+			=> SetFields(GetSelector(selector)).ToList<TKey>();
 
 		/// <summary>
 		/// 返回列表
 		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
 		/// <returns></returns>
-		public List<TModel> ToList() => ToList<TModel>();
+		public List<TResult> ToList<TSource, TResult>(Expression<Func<TSource, dynamic>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).ToList<TResult>();
+
+		/// <summary>
+		/// 返回列表
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public List<TResult> ToList<TResult>(Expression<Func<TModel, dynamic>> selector)
+		 => SetFields(GetSelector(selector)).ToList<TModel, TResult>(selector);
 		#endregion
 
 		#region FirstOrDefault
@@ -380,7 +406,7 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public TResult FirstOrDefault<TResult>(string fields = null)
 		{
-			SetFields(fields);
+			SetFieldsTake(fields);
 			return base.FirstOrDefault<TResult>();
 		}
 
@@ -390,6 +416,15 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public TModel FirstOrDefault()
 			=> FirstOrDefault<TModel>();
+
+		/// <summary>
+		/// 返回一行
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public TResult FirstOrDefault<TResult>(Expression<Func<TModel, dynamic>> selector)
+		 => SetFields(GetSelector(selector)).FirstOrDefault<TModel, TResult>(selector);
 
 		/// <summary>
 		/// 返回一行
@@ -408,7 +443,18 @@ namespace Creeper.SqlBuilder
 		/// <param name="selector"></param>
 		/// <returns></returns>
 		public TKey FirstOrDefault<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
-			=> SetFields(GetSelector(selector)).ToScalar<TKey>();
+			=> SetFieldsTake(GetSelector(selector)).ToScalar<TKey>();
+
+		/// <summary>
+		/// 返回一行
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public TResult FirstOrDefault<TSource, TResult>(Expression<Func<TSource, dynamic>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).FirstOrDefault<TResult>();
+
 		#endregion
 
 		#region Single Method
@@ -618,7 +664,28 @@ namespace Creeper.SqlBuilder
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public Task<List<TKey>> ToListAsync<TSource, TKey>(Expression<Func<TSource, TKey>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
-			=> ToListAsync<TKey>(GetSelector(selector), cancellationToken);
+			=> SetFields(GetSelector(selector)).ToListAsync<TKey>(cancellationToken);
+
+		/// <summary>
+		/// 返回列表
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<List<TResult>> ToListAsync<TResult>(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default)
+			=> ToListAsync<TModel, TResult>(selector, cancellationToken);
+
+		/// <summary>
+		/// 返回列表
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<List<TResult>> ToListAsync<TSource, TResult>(Expression<Func<TSource, dynamic>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).ToListAsync<TResult>(cancellationToken);
 
 		/// <summary>
 		/// 返回列表
@@ -667,6 +734,27 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public ValueTask<TKey> FirstOrDefaultAsync<TSource, TKey>(Expression<Func<TSource, TKey>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
 			=> SetFieldsTake(GetSelector(selector)).ToScalarAsync<TKey>(cancellationToken);
+
+		/// <summary>
+		/// 返回一行
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<TResult> FirstOrDefaultAsync<TResult>(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default)
+			=> FirstOrDefaultAsync<TModel, TResult>(selector, cancellationToken);
+
+		/// <summary>
+		/// 返回一行
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<TResult> FirstOrDefaultAsync<TSource, TResult>(Expression<Func<TSource, dynamic>> selector, CancellationToken cancellationToken = default) where TSource : ICreeperDbModel, new()
+			=> SetFieldsTake(GetSelector(selector)).FirstOrDefaultAsync<TResult>(cancellationToken);
 		#endregion
 
 		#region UnionFirstOrDefault
@@ -937,23 +1025,60 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult"></typeparam>
 		/// <param name="fields">返回字段, 可选</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeFirstOrDefault<TResult>(string fields = null)
+		public ISqlBuilder PipeFirstOrDefault<TResult>(string fields = null)
 			=> SetFieldsTake(fields).Pipe<TResult>(PipeReturnType.One);
 
 		/// <summary>
 		/// 返回一行(管道)
 		/// </summary>
-		/// <param name="fields">返回字段, 可选</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeFirstOrDefault(string fields = null)
-			=> PipeFirstOrDefault<TModel>(fields);
+		public ISqlBuilder PipeFirstOrDefault()
+			=> PipeFirstOrDefault<TModel>();
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeFirstOrDefault<TResult>(Expression<Func<TModel, dynamic>> selector)
+		 => SetFields(GetSelector(selector)).PipeFirstOrDefault<TModel, TResult>(selector);
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TKey"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeFirstOrDefault<TKey>(Expression<Func<TModel, TKey>> selector)
+			=> PipeFirstOrDefault<TModel, TKey>(selector);
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TKey"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeFirstOrDefault<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFieldsTake(GetSelector(selector)).PipeFirstOrDefault<TKey>();
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeFirstOrDefault<TSource, TResult>(Expression<Func<TSource, dynamic>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).PipeFirstOrDefault<TResult>();
 
 		/// <summary>
 		/// 返回联表实体(管道)
 		/// </summary>
 		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1>() where TResult1 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionFirstOrDefault<TResult1>() where TResult1 : ICreeperDbModel, new()
 			=> PipeFirstOrDefault<(TModel, TResult1)>();
 
 		/// <summary>
@@ -962,7 +1087,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult1"></typeparam>
 		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionFirstOrDefault<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
 			=> PipeFirstOrDefault<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
@@ -972,7 +1097,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult2"></typeparam>
 		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionFirstOrDefault<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionFirstOrDefault<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
 			=> PipeFirstOrDefault<(TModel, TResult1, TResult2, TResult3)>();
 		#endregion
 
@@ -983,23 +1108,60 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult">model type</typeparam>
 		/// <param name="fields">指定输出字段</param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeToList<TResult>(string fields = null)
+		public ISqlBuilder PipeToList<TResult>(string fields = null)
 			=> SetFields(fields).Pipe<TResult>(PipeReturnType.List);
 
 		/// <summary>
 		/// 返回列表(管道)
 		/// </summary>
-		/// <param name="fields"></param>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeToList(string fields = null)
-			=> PipeToList<TModel>(fields);
+		public ISqlBuilder PipeToList()
+			=> PipeToList<TModel>();
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TKey"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeToList<TKey>(Expression<Func<TModel, TKey>> selector)
+			=> PipeToList<TModel, TKey>(selector);
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TKey"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeToList<TSource, TKey>(Expression<Func<TSource, TKey>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).PipeToList<TKey>();
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TSource"></typeparam>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeToList<TSource, TResult>(Expression<Func<TSource, dynamic>> selector) where TSource : ICreeperDbModel, new()
+			=> SetFields(GetSelector(selector)).PipeToList<TResult>();
+
+		/// <summary>
+		/// 返回列表(管道)
+		/// </summary>
+		/// <typeparam name="TResult"></typeparam>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		public ISqlBuilder PipeToList<TResult>(Expression<Func<TModel, dynamic>> selector)
+		 => SetFields(GetSelector(selector)).PipeToList<TModel, TResult>(selector);
 
 		/// <summary>
 		/// 返回联表实体列表(管道)
 		/// </summary>
 		/// <typeparam name="TResult1"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionToList<TResult1>() where TResult1 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionToList<TResult1>() where TResult1 : ICreeperDbModel, new()
 			=> PipeToList<(TModel, TResult1)>();
 
 		/// <summary>
@@ -1008,7 +1170,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult1"></typeparam>
 		/// <typeparam name="TResult2"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionToList<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionToList<TResult1, TResult2>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new()
 			=> PipeToList<(TModel, TResult1, TResult2)>();
 
 		/// <summary>
@@ -1018,7 +1180,7 @@ namespace Creeper.SqlBuilder
 		/// <typeparam name="TResult2"></typeparam>
 		/// <typeparam name="TResult3"></typeparam>
 		/// <returns></returns>
-		public SelectBuilder<TModel> PipeUnionToList<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
+		public ISqlBuilder PipeUnionToList<TResult1, TResult2, TResult3>() where TResult1 : ICreeperDbModel, new() where TResult2 : ICreeperDbModel, new() where TResult3 : ICreeperDbModel, new()
 			=> PipeToList<(TModel, TResult1, TResult2, TResult3)>();
 
 		#endregion
@@ -1239,10 +1401,11 @@ namespace Creeper.SqlBuilder
 
 			var info = new UnionModel(unionAlias, EntityHelper.GetDbTable<TTarget>().TableName, expression.CmdText, unionType, isReturn);
 			if (info.IsReturn)
-				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(unionAlias);
+				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(unionAlias, DbConverter);
 			_unions.Add(info);
 			return AddParameters(expression.Parameters);
 		}
+
 		/// <summary>
 		/// join base method with string
 		/// </summary>
@@ -1278,7 +1441,7 @@ namespace Creeper.SqlBuilder
 		{
 			var info = new UnionModel(alias, EntityHelper.GetDbTable<TTarget>().TableName, on, unionType, isReturn);
 			if (info.IsReturn)
-				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(alias);
+				info.Fields = EntityHelper.GetFieldsAlias<TTarget>(alias, DbConverter);
 			_unions.Add(info);
 
 			return this;
@@ -1367,13 +1530,16 @@ namespace Creeper.SqlBuilder
 		/// <returns></returns>
 		public override string GetCommandText()
 		{
-			if (string.IsNullOrEmpty(Fields))
-				Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias);
+			if (string.IsNullOrEmpty(Fields)) Fields = EntityHelper.GetFieldsAlias<TModel>(MainAlias, DbConverter);
+
 			var field = new StringBuilder();
 			var union = new StringBuilder();
+
 			if (!string.IsNullOrEmpty(_distinctOn))
 				field.AppendLine(string.Concat("DISTINCT ON (", _distinctOn, ")"));
+
 			field.Append(Fields);
+
 			foreach (var item in _unions)
 			{
 				union.AppendLine(string.Format("{0} {1} {2} ON {3}", item.UnionTypeString, item.Table, item.AliasName, item.Expression));
@@ -1401,10 +1567,13 @@ namespace Creeper.SqlBuilder
 				sqlText.AppendLine(string.Concat("OFFSET ", _offset));
 
 			if (!string.IsNullOrEmpty(_union))
-				sqlText.AppendLine(string.Concat(_union));
+				sqlText.AppendLine(_union);
 
 			if (!string.IsNullOrEmpty(_except))
-				sqlText.AppendLine(string.Concat("EXCEPT ", _except));
+				sqlText.AppendLine(_except);
+
+			if (!string.IsNullOrEmpty(_intersect))
+				sqlText.AppendLine(_intersect);
 			return sqlText.ToString().TrimEnd();
 		}
 		#endregion
@@ -1431,10 +1600,25 @@ namespace Creeper.SqlBuilder
 
 		private SelectBuilder<TModel> SetFields(string fields)
 		{
-			if (!string.IsNullOrEmpty(fields))
-				Fields = fields;
+			if (!string.IsNullOrEmpty(fields)) Fields = fields;
 			return this;
 		}
+		#endregion
+
+		#region Static
+		/// <summary>
+		/// 输出sqlbuilder 
+		/// </summary>
+		/// <returns></returns>
+		public static SelectBuilder<TModel> Select()
+			=> new SelectBuilder<TModel>();
+
+		/// <summary>
+		/// 输出sqlbuilder 
+		/// </summary>
+		/// <returns></returns>
+		public static SelectBuilder<TModel> Select(Expression<Func<TModel, object>> selector)
+			=> Select().Field(selector);
 		#endregion
 	}
 }

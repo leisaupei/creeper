@@ -1,6 +1,15 @@
 # 自定义查询 
 框架提供可直接调用ADO进行查询。
-
+## 切换数据库主从
+使用``GetExecute()``方法可以使用其他(主从皆可)数据库配置
+``` C#
+_dbContext.GetExecute<DbSecondary>().ExecuteNonQuery();
+```
+或者
+``` C#
+_dbContext.GetExecute("DbSecondary").ExecuteNonQuery();
+```
+> 建议使用泛型选择配置，减少单词拼错可能性
 ## ExecuteNonQuery
 ``` C#
 DbParameter[] ps = new[] {
@@ -9,7 +18,7 @@ DbParameter[] ps = new[] {
 };
 int affrows = _dbContext.ExecuteNonQuery("update student set name = @name where id == @id", CommandType.text, ps);
 ```
-> DbParameter派生类以PostgreSql为例<br>
+> ``DbParameter``派生类以PostgreSql为例<br>
 > 如果不是使用默认数据库配置可使用``_dbContext.GetExecute<DbName>().ExecuteNonQuery()``方法，以下同理
 
 ## ExecuteScalar
@@ -35,7 +44,7 @@ DbParameter[] ps = new[] { new NpgsqlParameter("id", 1) };
 > 接收泛型与``ToList<T>``使用一致，详见[查询表达式-查询返回类型](./Select.md#查询返回类型)
 
 ### 使用管道查询ExecuteDataReaderPipe
-返回修改行数和返回结果集不能混合使用，如果混合使用会抛出[NotSupportedException](https://docs.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-5.0)异常<
+返回修改行数和返回结果集不能混合使用，如果混合使用会抛出[NotSupportedException](https://docs.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-5.0)异常
 #### 查询
 ``` C#
 ISqlBuilder[] sqls = new ISqlBuilder[] {

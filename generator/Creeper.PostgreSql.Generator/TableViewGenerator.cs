@@ -80,11 +80,6 @@ namespace Creeper.PostgreSql.Generator
 		/// </summary>
 		private string DalClassName => Types.DeletePublic(_schemaName, _table.Name, isView: _isView);
 
-		/// <summary>
-		/// 表名
-		/// </summary>
-		private string TableName => Types.DeletePublic(_schemaName, _table.Name, true, _isView).ToLowerPascal();
-
 		public ICreeperDbExecute DbExecute => _dbExecute;
 
 		private static readonly string[] _notAddQues = { "string", "JToken", "byte[]", "object", "IPAddress", "Dictionary<string, string>", "NpgsqlTsQuery", "NpgsqlTsVector", "BitArray", "PhysicalAddress", "XmlDocument", "PostgisGeometry" };
@@ -119,12 +114,14 @@ namespace Creeper.PostgreSql.Generator
 			}
 			if (table.Type == "view")
 				_isView = true;
+
+			ModelGenerator();
 		}
 
 		/// <summary>
 		/// 获取字段
 		/// </summary>
-		public void GetFieldList()
+		private void GetFieldList()
 		{
 			var sql = $@"
 SELECT a.oid, 
@@ -218,7 +215,7 @@ WHERE a.indrelid = '{_schemaName}.{_table.Name}'::regclass AND a.indisprimary
 		/// <summary>
 		/// 生成Model.cs文件
 		/// </summary>
-		public void ModelGenerator()
+		private void ModelGenerator()
 		{
 			string _filename = Path.Combine(_modelPath, ModelClassName + ".cs");
 

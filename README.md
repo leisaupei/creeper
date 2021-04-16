@@ -1,7 +1,7 @@
 
 # Creeper介绍
-
-[![Creeper.PostgreSql on fuget.org](https://www.fuget.org/packages/Creeper.PostgreSql/badge.svg)](https://www.fuget.org/packages/Creeper.PostgreSql)
+[![Creeper](https://img.shields.io/nuget/v/Creeper.svg?label=Creeper&logo=nuget)](https://www.nuget.org/packages/Creeper)
+[![Creeper.PostgreSql](https://img.shields.io/nuget/v/Creeper.PostgreSql.svg?label=Creeper.PostgreSql&logo=nuget)](https://www.fuget.org/packages/Creeper.PostgreSql)
 
 1. 基于.NetStandard2.1的RabbitMQ的轻量级ORM框架。
 2. 适配多种支持的不同种类数据库开发场景。
@@ -39,10 +39,10 @@ dotnet bin\Debug\net5.0\Creeper.Generator.dll -o D:\TestCreeper -p TestCreeper -
 ```
 dotnet bin\Debug\net5.0\Creeper.Generator.dll -o D:\TestCreeper -p TestCreeper -s t --b host=localhost;port=5432;user=postgres;pwd=123456;db=postgres;name=main;type=postgresql host=localhost;port=3306;user=mysql;pwd=123456;db=mysql_db;name=MySqlTest;type=mysql
 ```
-> 更多忽略配置可查看generator/Creeper.Generator/appsettings.json
+> 更多忽略配置可查看[generator/Creeper.Generator/appsettings.json](/generator/Creeper.Generator/appsettings.json)或参阅[代码生成器配置说明](./docs/CodeMakerDiscription.md)
 ## 配置DbContext
 
-### Startup.cs
+### Startup
 ``` C#
 public void ConfigureServices(IServiceCollection services)
 {
@@ -59,6 +59,7 @@ public void ConfigureServices(IServiceCollection services)
     });
 }
 ```
+> ``PostgreSqlDbOptions``参阅[DbOption说明](./docs/DbOptions.md)
 ### Controller或其他注入类
 ``` C#
 public class SomeController : Controller
@@ -70,9 +71,9 @@ public class SomeController : Controller
     }
 
     [HttpGet]
-    public DbModel SomeAction()
+    public async Task SomeAction()
     {
-        return _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).FirstOrDefault();
+        _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).ToOne();
     }
 }
 ```

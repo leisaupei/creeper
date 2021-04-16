@@ -35,12 +35,5 @@ namespace Creeper.Driver
 		/// <returns></returns>
 		Task<DbConnection> GetConnectionAsync(CancellationToken cancellationToken);
 
-		/// <summary>
-		/// 获取dbparameter
-		/// </summary>
-		/// <param name="name"></param>
-		/// <param name="value"></param>
-		/// <returns></returns>
-		DbParameter GetDbParameter(string name, object value);
 	}
 }
