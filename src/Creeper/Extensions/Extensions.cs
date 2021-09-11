@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Creeper.Driver;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Creeper.Extensions
 {
@@ -43,15 +45,6 @@ namespace Creeper.Extensions
 		public static bool IsNullOrDBNull(this object obj) => obj is DBNull || obj == null;
 
 		/// <summary>
-		/// 判断type是否继承typeof(T)
-		/// </summary>
-		/// <param name="type"></param>
-		/// <returns></returns>
-		public static bool IsImplementation<T>(this Type type)
-		{
-			return typeof(T).IsAssignableFrom(type);
-		}
-		/// <summary>
 		/// md5校验
 		/// </summary>
 		/// <param name="content"></param>
@@ -62,6 +55,8 @@ namespace Creeper.Extensions
 			using (MD5 md5 = MD5.Create())
 				return BitConverter.ToString(md5.ComputeHash(result)).Replace("-", "").ToLower();
 		}
+		public static ValueTask AsValueTask(this Task task) => new ValueTask(task);
+		public static ValueTask<T> AsValueTask<T>(this Task<T> task) => new ValueTask<T>(task);
 
 	}
 }

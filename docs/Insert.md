@@ -19,7 +19,7 @@ public partial class PeopleModel : ICreeperDbModel
 > 表示创建时间字段：名称为Create_time的非空字段，如果是default会主动赋值为DateTime.Now
 ## Insert插入后返回实体类
 ``` C#
-PeopleModel info = _dbContext.Insert(new PeopleModel
+PeopleModel info = _context.Insert(new PeopleModel
 {
     Age = 25,
     Name = "小明",
@@ -28,7 +28,7 @@ PeopleModel info = _dbContext.Insert(new PeopleModel
 ## 插入后返回修改行数
 ### 插入单条数据
 ``` C#
-int affectedRows = _dbContext.InsertOnly(new PeopleModel
+int affectedRows = _context.InsertOnly(new PeopleModel
 {
     Age = 25,
     Name = "小明",
@@ -40,15 +40,15 @@ int affectedRows = _dbContext.InsertOnly(new PeopleModel
 List<PeopleModel> peoples = new List<PeopleModel>();
 peoples.Add(new PeopleModel { Age = 25, Name = "小明" });
 peoples.Add(new PeopleModel { Age = 26, Name = "小红" });
-int affectedRows = _dbContext.Insert(peoples);
+int affectedRows = _context.Insert(peoples);
 ```
 
 ## 根据条件插入
 当Name为小明的数据不存在时, 插入people
 ``` C#
 PeopleModel people = new PeopleModel { Age = 25, Name = "小明" });
-int affectedRows = _dbContext.Insert<PeopleModel>().Set(people)
-    .WhereNotExists(_dbContext.Select<PeopleModel>().Where(a => a.Name == "小明"))
-    .ToAffectedRows(out people); //此处out可将原变量修改为update后的值, 也可忽略
+int affectedRows = _context.Insert<PeopleModel>().Set(people)
+    .WhereNotExists(_context.Select<PeopleModel>().Where(a => a.Name == "小明"))
+    .ToAffrows(out people); //此处out可将原变量修改为update后的值, 也可忽略
 ```
 > Where更多用法详见[查询表达式](./SelectExpression.md)

@@ -19,14 +19,14 @@ public partial class PeopleModel : ICreeperDbModel
 ``` C#
 PeopleModel people = new PeopleModel { Id = 1, Age = 25, Name = "小明" };
 //可以传入集合
-int affectedRows = _dbContext.Update(people).Set(a => a.Name, "小云")
-    .ToAffectedRows(out people);//out可将原变量修改为update后的值, 也可忽略
+int affectedRows = _context.Update(people).Set(a => a.Name, "小云")
+    .ToAffrows(out people);//out可将原变量修改为update后的值, 也可忽略
 ```
 > 注意：以此方式修改，若Table没有主键会抛出异常
 
 ## 根据条件更新
 ``` C#
-int affectedRows = _dbContext.Update<PeopleModel>().Set(a => a.Name, "小云").Where(a => a.Id == 1).ToAffectedRows();
+int affectedRows = _context.Update<PeopleModel>().Set(a => a.Name, "小云").Where(a => a.Id == 1).ToAffrows();
 ```
 > Where更多用法详见[查询表达式](./SelectExpression.md)
 
@@ -35,7 +35,7 @@ int affectedRows = _dbContext.Update<PeopleModel>().Set(a => a.Name, "小云").W
 ``` C#
 PeopleModel people = new PeopleModel { Id = 1, Age = 25, Name = "小明" };
 
-int affectedRows = _dbContext.UpdateOnly(people);
+int affectedRows = _context.UpdateOnly(people);
 
-PeopleModel result = _dbContext.UpdateOne(people);
+PeopleModel result = _context.UpdateOne(people);
 ```

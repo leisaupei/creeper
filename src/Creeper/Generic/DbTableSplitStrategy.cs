@@ -1,4 +1,4 @@
-﻿using Creeper.DbHelper;
+﻿using Creeper.Utils;
 using Creeper.Driver;
 using System;
 using System.Linq;
@@ -8,14 +8,13 @@ namespace Creeper.Generic
 	/// <summary>
 	/// 数据库分表对象
 	/// </summary>
-	/// <typeparam name="TDbName">数据库名称</typeparam>
 	/// <typeparam name="TSplitTable">需要分表的对象</typeparam>
 	/// <typeparam name="TReferenceTable">参照表</typeparam>
 	/// <typeparam name="TReferenceField">参照表字段</typeparam>
-	public class DbTableSplitStrategy<TDbName, TSplitTable, TReferenceTable, TReferenceField> : DbSplitStrategy
-		where TDbName : struct, ICreeperDbName
-		where TSplitTable : class, ICreeperDbModel, new()
-		where TReferenceTable : class, ICreeperDbModel, new()
+	[Obsolete]
+	public class DbTableSplitStrategy<TSplitTable, TReferenceTable, TReferenceField> : DbSplitStrategy
+		where TSplitTable : class, ICreeperModel, new()
+		where TReferenceTable : class, ICreeperModel, new()
 	{
 		/// <summary>
 		/// 
@@ -23,10 +22,11 @@ namespace Creeper.Generic
 		/// <param name="splitType"></param>
 		/// <param name="accordingValue"></param>
 		/// <param name="suffix">分割后缀 必须有{0}</param>
-		public DbTableSplitStrategy(SplitType splitType, object[] accordingValue, string suffix = null) : base(typeof(TReferenceField), typeof(TDbName), typeof(TSplitTable), typeof(TReferenceTable), splitType, accordingValue, suffix)
+		public DbTableSplitStrategy(SplitType splitType, object[] accordingValue, string suffix = null) : base(typeof(TReferenceField), typeof(TSplitTable), typeof(TReferenceTable), splitType, accordingValue, suffix)
 		{
 		}
 	}
+	[Obsolete]
 	public abstract class DbSplitStrategy
 	{
 		/// <summary>
@@ -41,10 +41,6 @@ namespace Creeper.Generic
 		/// 参照字段的类型
 		/// </summary>
 		public virtual Type ReferenceFieldType { get; }
-		/// <summary>
-		/// 数据库名称
-		/// </summary>
-		public virtual Type DbNameType { get; }
 		/// <summary>
 		/// 参照字段的类型
 		/// </summary>
@@ -82,16 +78,14 @@ namespace Creeper.Generic
 
 		internal DbSplitStrategy()
 		{
-			DbName = DbNameType.Name;
-			SplitTable = EntityHelper.GetDbTable(SplitTableType).TableName;
-			ReferenceTable = EntityHelper.GetDbTable(ReferenceTableType).TableName;
+			SplitTable = EntityUtils.GetDbTable(SplitTableType).TableName;
+			ReferenceTable = EntityUtils.GetDbTable(ReferenceTableType).TableName;
 			ReferenceField = ReferenceFieldType.Name.ToLower();
 		}
 
-		protected DbSplitStrategy(Type referenceFieldType, Type dbNameType, Type splitTableType, Type referenceTableType, SplitType splitType, object[] accordingValue, string suffix = null) : base()
+		protected DbSplitStrategy(Type referenceFieldType, Type splitTableType, Type referenceTableType, SplitType splitType, object[] accordingValue, string suffix = null) : base()
 		{
 			ReferenceFieldType = referenceFieldType ?? throw new ArgumentNullException(nameof(referenceFieldType));
-			DbNameType = dbNameType ?? throw new ArgumentNullException(nameof(dbNameType));
 			SplitTableType = splitTableType ?? throw new ArgumentNullException(nameof(splitTableType));
 			ReferenceTableType = referenceTableType ?? throw new ArgumentNullException(nameof(referenceTableType));
 			AccordingValue = accordingValue ?? new object[0];
@@ -218,7 +212,7 @@ namespace Creeper.Generic
 		private void GetSplitSeed(out int value)
 		{
 			if (AccordingValue.Length != 1
-				|| AccordingValue[0] is not int splitYears
+				|| !(AccordingValue[0] is int splitYears)
 				|| splitYears <= 0)
 				throw new ArgumentException("length of according value must be 1, the type is int[], int[0] great than 0.", nameof(AccordingValue));
 			value = splitYears;

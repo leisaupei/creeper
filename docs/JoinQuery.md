@@ -46,7 +46,7 @@ public partial class TeacherModel : ICreeperDbModel
 - 在条件``Where<GradeModel>``需要检索b表用到字段时，需要添加b表泛型，且lambda表达式需要以b为[``ParameterExpression``](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)
 - ToList方法只会返回主表的所有列
 ``` C#
-List<StudentModel> stus = _dbContext.Select<StudentModel>()
+List<StudentModel> stus = _context.Select<StudentModel>()
     //此处可变化连表方式, 支持LeftJoin/RightJoin/LeftOutJoin/RightOutJoin
     .InnerJoin<GradeModel>((a, b) => a.Grade_id == b.Id))
     //WhereAny<T>/WhereExists<T>等都可使用其他表的类型
@@ -59,7 +59,7 @@ List<StudentModel> stus = _dbContext.Select<StudentModel>()
 - 此处``InnerJoin<T1>``和``InnerJoin<T1, T2>``，前者是关联主表，后者是需要关联次表的情况下使用
 - 关联此表的[``ParameterExpression``](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.parameterexpression?view=net-5.0)需要符合别名规范，详见[使用者必读注意事项](./Attention.md)
 ``` C#
-TeacherModel teacher = _dbContext.Select<TeacherModel>()
+TeacherModel teacher = _context.Select<TeacherModel>()
     .InnerJoin<GradeModel>((a, b) => a.Id == b.Teacher_id))
     .InnerJoin<GradeModel, StudentModel>((b, c) => b.Id = c.Grade_id)
     .Where<StudentModel>(c => c.Name == "小明")
@@ -69,7 +69,7 @@ TeacherModel teacher = _dbContext.Select<TeacherModel>()
 ## 结果输出
 此时如果需要把student表和grade表同时返回，可以使用Union方法，然后在输出的时候也使用Union方式输出
 ``` C#
-List<(StudentModel, GradeModel)> stus = _dbContext.Select<StudentModel>()
+List<(StudentModel, GradeModel)> stus = _context.Select<StudentModel>()
     //此处改为UnionInnerJoin方法
     .UnionInnerJoin<GradeModel>((a, b) => a.Grade_id == b.Id))
     .Where<GradeModel>(b => b.Name == "软件技术")
@@ -79,7 +79,7 @@ List<(StudentModel, GradeModel)> stus = _dbContext.Select<StudentModel>()
 ```
 或者
 ``` C#
-(TeacherModel, GradeModel, StudentModel) result = _dbContext.Select<TeacherModel>()
+(TeacherModel, GradeModel, StudentModel) result = _context.Select<TeacherModel>()
     .UnionInnerJoin<GradeModel>((a, b) => a.Id == b.Teacher_id))
     .UnionInnerJoin<GradeModel, StudentModel>((b, c) => b.Id = c.Grade_id)
     .Where<StudentModel>(c => c.Name == "小明")

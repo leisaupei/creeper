@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>leisaupei</Authors>
+    <Company>leisaupei@163.com</Company>
+    <Description>Creeper Access Implementation</Description>
+    <PackageProjectUrl>https://github.com/leisaupei/creeper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>1.1.0</Version>
+    <PackageLicenseFile></PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>leisaupei</Copyright>
+    <FileVersion>1.1.0.0</FileVersion>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.1\Creeper.Access.xml</DocumentationFile>
+    <NoWarn>1701;1702;1591;1573</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.OleDb" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Creeper\Creeper.csproj" />
+  </ItemGroup>
+
+
+</Project>

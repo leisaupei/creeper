@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace Creeper.SqlBuilder.ExpressionAnalysis
 {
-	public class PartialEvaluator : ExpressionVisitor
+	internal class PartialEvaluator : ExpressionVisitor
 	{
 		private readonly Func<Expression, bool> _fnCanBeEvaluated;
 		private HashSet<Expression> _candidates;
@@ -33,7 +33,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		{
 			if (expression.NodeType == ExpressionType.Constant) return expression;
 
-			return expression.GetConstantFromExression(expression.Type); 
+			return expression.GetConstantFromExpression(expression.Type); 
 		}
 
 		private static bool CanBeEvaluatedLocally(Expression expression) => expression.NodeType != ExpressionType.Parameter;

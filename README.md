@@ -6,7 +6,7 @@
 1. 基于.NetStandard2.1的RabbitMQ的轻量级ORM框架。
 2. 适配多种支持的不同种类数据库开发场景。
 3. 自带Entity生成器，一键即可生成数据库模型代码。
-4. 支持单条记录的Redis数据缓存，可自定义缓存策略。
+4. 支持单条记录的自定义数据库缓存，可自定义缓存策略。
 5. 支持一主多从数据库策略，自由切换主从。
 6. 所有查询支持异步方法。
 7. [使用指南](./docs/README.md)。
@@ -20,16 +20,16 @@
 ## 配置代码生成器
 ### 参数
 
-- -o 输出路径
-- -p 项目名称
-- -s 是否在目标目录创建.sln解决方案文件
-- --b 构建连接字符串，params参数，需要写在末尾
-  - host 数据库地址
-  - port 数据库端口
-  - pwd password
-  - user username
-  - name 数据库名称，用于生成名称参数，留空默认Main
-  - type 数据库类型，postgresql/sqlserver/mysql
+- ``-o`` 输出路径
+- ``-p`` 项目名称
+- ``-s`` 是否在目标目录创建.sln解决方案文件
+- ``--b`` 构建连接字符串，params参数，需要写在末尾
+  - ``host`` 数据库地址
+  - ``port`` 数据库端口
+  - ``pwd`` password
+  - ``user`` username
+  - ``name`` 数据库名称，用于生成名称参数，留空默认Main
+  - ``type`` 数据库类型，postgresql/sqlserver/mysql
 ### Build
 - 单个
 ``` 
@@ -46,24 +46,46 @@ dotnet bin\Debug\net5.0\Creeper.Generator.dll -o D:\TestCreeper -p TestCreeper -
 ``` C#
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddCreeperDbContext(options =>
+    services.AddCreeper(options =>
     {
-        //默认使用哪个数据库的配置, 某些地方没有标记数据库的情况下会默认使用此配置
-        options.DefaultDbOptionName = typeof(DbMain);
-        //数据库主从策略 从库优先,没有会报错;从库优先,没有会使用主库;只使用主库
-        options.DbTypeStrategy = DataBaseTypeStrategy.SecondaryFirstOfMainIfEmpty;
-        //数据库缓存策略, 详细看自定义配置
-        options.UseCache<CustomDbCache>();
-        //添加数据库配置
-        options.AddPostgreSql(new PostgreSqlDbOptions.MainPostgreSqlDbOption("MainDbConnectionString", new[] { "SecondaryDbConnectionStrings" }));
+        //PostgreSqlDbContext可由生成器生成或继承CreeperDbContextBase实现即可
+        options.AddPostgreSqlDbContext<PostgreSqlDbContext>(t =>
+        {
+            t.UseCache<RedisDbCache>();
+            //数据库主从策略 从库优先,没有会报错;从库优先,没有会使用主库;只使用主库
+            t.DbTypeStrategy = DataBaseTypeStrategy.MainIfSecondaryEmpty;
+            //添加主库配置
+            t.UseConnectionString("MainDbConnectionString");
+            //添加多个从库配置
+            t.UseSecondaryConnectionString(new[] { "SecondaryDbConnectionStrings" });
+        });
+        //此处可添加多种数据库配置, 使用DbContext的对象名称作区分
+        //options.AddMySqlDbContext<MySqlSqlDbContext>(t =>
+        //{
+        //    t.UseCache<RedisDbCache>();
+        //    //数据库主从策略 从库优先,没有会报错;从库优先,没有会使用主库;只使用主库
+        //    t.DbTypeStrategy = DataBaseTypeStrategy.MainIfSecondaryEmpty;
+        //    //添加主库配置
+        //    t.UseConnectionString("MainDbConnectionString");
+        //    //添加多个从库配置
+        //    t.UseSecondaryConnectionString(new[] { "SecondaryDbConnectionStrings" });
+        //});
     });
 }
 ```
-> ``PostgreSqlDbOptions``参阅[DbOption说明](./docs/DbOptions.md)
+> ``options.UseCache<DbCache>()``参阅[数据库缓存](./DbCache.md)
+
+> ``PostgreSqlDbContext``参阅[DbContext说明](./docs/DbContext.md)
 ### Controller或其他注入类
 ``` C#
 public class SomeController : Controller
 {
+    //如果此处使用多个DbContext, 直接使用DbContext名称或使用以下调用方式也行
+    //private readonly Creeper.Driver.ICreeperDbContext _dbContext;
+    //public SomeController(IEnumerable<Creeper.Driver.ICreeperDbContext> dbContexts)
+    //{
+    //    _dbContext = dbContexts.FirstOrDefault(a => a.Name == typeof(PostgreSqlDbContext).FullName);
+    //}
     private readonly Creeper.Driver.ICreeperDbContext _dbContext;
     public SomeController(Creeper.Driver.ICreeperDbContext dbContext)
     {
@@ -71,9 +93,9 @@ public class SomeController : Controller
     }
 
     [HttpGet]
-    public async Task SomeAction()
+    public DbModel SomeAction()
     {
-        _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).ToOne();
+        return _dbContext.Select<DbModel>().Where(a => a.DbField == SomeValue).ToOne();
     }
 }
 ```

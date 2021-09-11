@@ -28,15 +28,12 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// </summary>
 		public string[] Alias { get; private set; }
 
-		/// <summary>
-		/// 字段是否加引号
-		/// </summary>
 		private readonly List<object> _arguments = new List<object>();
 		private readonly HashSet<string> _alias = new HashSet<string>();
 		private readonly Stack<string> _conditionParts = new Stack<string>();
-		private readonly ICreeperDbTypeConverter _converter;
+		private readonly CreeperConverter _converter;
 
-		public ConditionBuilder(ICreeperDbTypeConverter converter)
+		public ConditionBuilder(CreeperConverter converter)
 		{
 			_converter = converter;
 		}
@@ -91,27 +88,22 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		protected override Expression VisitBinary(BinaryExpression node)
 		{
 			if (node == null) return node;
+			var isVisit = false;
 			//表达式是否包含转换类型的表达式, 一般枚举类型运算需要用到
-			if (node.Left.NodeType == ExpressionType.Convert || node.Right.NodeType == ExpressionType.Convert)
-			{
-				if (node.Left.NodeType == ExpressionType.Convert)
-					VisitConvert((UnaryExpression)node.Left, node.Right, true);
-				else
-					VisitConvert((UnaryExpression)node.Right, node.Left, false);
-			}
-			else if (node.NodeType == ExpressionType.ArrayIndex) //array[1]表达式包含数组索引
-			{
-				if (node.Left.NodeType == ExpressionType.MemberAccess)
-				{
-					Visit(node.Left);
+			if (node.Left.NodeType == ExpressionType.Convert) isVisit = VisitConvert((UnaryExpression)node.Left, node.Right, true);
 
-					//数据库索引从1开始
-					_conditionParts.Push(string.Concat("[", (int)node.Right.GetExpressionValue() + 1, "]"));
-					MergeConditionParts();
-					return node;
-				}
+			else if (node.Right.NodeType == ExpressionType.Convert) isVisit = VisitConvert((UnaryExpression)node.Right, node.Left, false);
+
+			else if (node.NodeType == ExpressionType.ArrayIndex && node.Left.NodeType == ExpressionType.MemberAccess) //array[1]表达式包含数组索引
+			{
+				Visit(node.Left);
+
+				//数据库索引从1开始
+				_conditionParts.Push(string.Concat("[", (int)node.Right.GetExpressionValue() + 1, "]"));
+				MergeConditionParts();
+				return node;
 			}
-			else
+			if (!isVisit) //如果没有被解析, 那么使用通用解析方法
 			{
 				Visit(node.Left);
 				Visit(node.Right);
@@ -119,7 +111,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			var right = _conditionParts.Pop();
 			var left = _conditionParts.Pop();
 
-			string cond = node.GetCondition(left, right);
+			string cond = node.GetCondition(left, right, _converter);
 
 			if (cond != null) _conditionParts.Push(cond);
 			return node;
@@ -136,13 +128,17 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			{
 				_arguments.Add(node.Value);
 				string cond = null;
-				if (node.IsImplementation<IList>()) //如果是list/array类型
+				if (typeof(IList).IsAssignableFrom(node.Type)) //如果是list/array类型
 				{
 					if (node.Type.GetElementType() == typeof(string)) //如果是字符串数据, 部分数据库需要强制转换
-						cond = string.Format("CAST({{{0}}} AS {1}[])", _arguments.Count - 1, _converter.CastStringDbType);
+					{
+						if (_converter.DataBaseKind != DataBaseKind.PostgreSql)
+							throw new CreeperNotSupportedException("暂不支持PostgreSql以外的数据库的数组操作");
+						cond = string.Format("CAST({{{0}}} AS VARCHAR[])", _arguments.Count - 1); // 目前只有postgresql会执行到此处所以VARCHAR[]先写死
+					}
 				}
 
-				if (cond == null) cond = string.Format("{{{0}}}", _arguments.Count - 1);
+				if (cond == null) cond = $"{{{_arguments.Count - 1}}}";
 
 				if (cond != null) _conditionParts.Push(cond);
 			}
@@ -165,14 +161,7 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			}
 
 			// 返回数据库成员字段
-			if (_converter.QuotationMarks) //是否添加引号
-			{
-				_conditionParts.Push(string.Format("{0}", node.GetOriginExpression().ToDatebaseField()));
-			}
-			else
-			{
-				_conditionParts.Push(string.Format("{0}", node.GetOriginExpression()));
-			}
+			_conditionParts.Push(string.Format("{0}", node.GetOriginExpression().ToDatebaseField(_converter)));
 
 			return node;
 		}
@@ -185,64 +174,94 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 			bool useDefault = true; //是否使用默认表达式访问方式
 
 			string format = null;
-			var not = _conditionParts.TryPop(out var result) ? result : string.Empty; //非运算符
+			bool isNot = false;
+			if (_conditionParts.Count > 0)
+			{
+				isNot = _conditionParts.Peek() == "NOT";
+				if (isNot) _conditionParts.Pop();
+			}
 			switch (node.Method.Name)
 			{
 				case "StartsWith": //Like 'xxx%',
-					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " ''", connector, "{1}", connector, "'%'");
+					format = string.Format(_converter.ExplainLike(VisitStringContainCulture(node.Arguments), isNot), "{0}", string.Concat("{1}", connector, "'%'"));
 					break;
 
 				case "Contains": //Like '%xxx%',
 					if (node.Object?.Type == typeof(string)) //如果是String.Contains, 那么使用like
-						format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " '%'", connector, "{1}", connector, "'%'");
-
-					//其他情况使用 IEnumerable.Contains
-					else
 					{
-						useDefault = false;
-						var opr = not == "NOT" ? "<>" : "=";
-						format = string.Concat("{0} ", opr, " {1}");
-						var method = not == "NOT" ? "ALL" : "ANY";
+						format = string.Format(_converter.ExplainLike(VisitStringContainCulture(node.Arguments), isNot), "{0}", string.Concat("'%'", connector, "{1}", connector, "'%'"));
+						break;
+					}
+					//其他情况使用 IEnumerable.Contains
 
-						for (int i = 0; i < node.Arguments.Count; i++) //遍历Visit成员表达式
+					useDefault = false;
+					MemberExpression memberExpression = null;
+					Expression arrayExpression = null;
+
+					for (int i = 0; i < node.Arguments.Count; i++) //遍历Visit成员表达式
+					{
+						if (node.Arguments[i] is UnaryExpression ue && ue.Operand is MemberExpression me1)
+							memberExpression = me1;
+						else if (node.Arguments[i] is MemberExpression me2)
+							memberExpression = me2;
+						else
+							arrayExpression = node.Arguments[i];
+					}
+					var memberIsArray = false;
+					VisitMember(memberExpression);
+					if (typeof(IEnumerable).IsAssignableFrom(arrayExpression.Type) && arrayExpression.Type != typeof(string))
+					{
+						if (_converter.MergeArray)
 						{
-							Expression arg = node.Arguments[i];
-							//如果当前表达式是IEnumerable类型, 且不是
-							if (arg.IsImplementation<IEnumerable>() && arg.Type != typeof(string))
+							if (!typeof(IList).IsAssignableFrom(arrayExpression.Type)) //因为数据库不支持非IList类型的集合, 所以要转一下
 							{
-								format = format.Replace($"{{{i}}}", $"{method}({{{i}}})");
-								arg = arg.ToArrayExpression();
+								var obj = arrayExpression.GetExpressionValue(); //获取表达式的值
+								obj = obj.GetType().GetMethod("ToArray").Invoke(obj, new object[0]); //调用ToArray()方法
+
+								arrayExpression = Expression.Constant(obj);
 							}
-							Visit(arg);
+							Visit(arrayExpression);
 						}
-						if (!format.StartsWith("{0}")) //ALL/ANY只能在操作符后面, 这里添加前后对调方法, 用PostgreSql为例
+						else
 						{
-							var conds = format.Split($" {opr} ").Reverse();
-							format = string.Join($" {opr} ", conds);
+							var values = arrayExpression.GetExpressionValue();
+							foreach (var item in (IEnumerable)values)
+							{
+								_arguments.Add(item);
+								_conditionParts.Push($"{{{_arguments.Count - 1}}}");
+							}
 						}
 					}
+					else
+					{
+						memberIsArray = true;
+						Visit(arrayExpression);
+					}
+
+					var ps = PopAllParts();
+					var cond = _converter.ExplainAny(ps[0], isNot, ps[1..], memberIsArray);
+					_conditionParts.Push(cond);
+
 					break;
 
 				case "EndsWith": //Like '%xxx',
-					format = string.Concat("{0} ", not, " ", IgnoreCaseConvert(node.Arguments), " '%'", connector, "{1}", connector, "''");
+					format = string.Format(_converter.ExplainLike(VisitStringContainCulture(node.Arguments), isNot), "{0}", string.Concat("'%'", connector, "{1}"));
 					break;
 
 				case "Equals":
-					format = string.Concat("({0} ", not == "NOT" ? "<>" : "=", " {1})");
+					format = string.Concat("({0} ", isNot ? "<>" : "=", " {1})");
 					break;
 
 				case "ToString": //a.Name.ToString()=>(CAST a.Name AS VARCHAR)
 					if (node.Object.NodeType != ExpressionType.MemberAccess) goto default;
 					useDefault = false;
-					_conditionParts.Push("CAST(");
 					VisitMember((MemberExpression)node.Object);
-					_conditionParts.Push(string.Format(" AS {0})", _converter.CastStringDbType));
-					MergeConditionParts();
+					_conditionParts.Push(_converter.CastStringDataType(_conditionParts.Pop()));
 					break;
 
 				default: //如果没有特殊的方法解析, 直接返回方法的返回值, 用常量表达式Visit
 					useDefault = false;
-					var constantExpression = node.GetConstantFromExression(node.Type);
+					var constantExpression = node.GetConstantFromExpression(node.Type);
 					VisitConstant(constantExpression);
 					break;
 			}
@@ -259,26 +278,15 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		}
 
 		/// <summary>
-		/// 忽略大小写用ILIKE, 否则用LIKE
-		/// </summary>
-		/// <param name="arguments"></param>
-		/// <returns></returns>
-		private string IgnoreCaseConvert(ReadOnlyCollection<Expression> arguments)
-		{
-			var ignoreCase = VisitStringContainCulture(arguments);
-			return ignoreCase ? "ILIKE" : "LIKE";
-		}
-
-		/// <summary>
-		/// 检查模糊查询是否忽略大小写
+		/// 检查模糊查询是否忽略大小写, 默认忽略大小写
 		/// </summary>
 		/// <param name="arguments"></param>
 		/// <returns></returns>
 		private bool VisitStringContainCulture(ReadOnlyCollection<Expression> arguments)
 		{
-			if (arguments.Count != 2) return false;
-			if (arguments[1].ToString().EndsWith("IgnoreCase")) return true;
-			return false;
+			if (arguments.Count != 2) return true;
+			if (!arguments[1].ToString().EndsWith("IgnoreCase")) return false;
+			return true;
 		}
 
 		/// <summary>
@@ -327,12 +335,18 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <param name="format"></param>
 		private void MergeConditionParts(string format)
 		{
+			string[] parts = PopAllParts();
+
+			if (format != null) _conditionParts.Push(string.Format(format, parts));
+		}
+
+		private string[] PopAllParts()
+		{
 			var length = _conditionParts.Count;
 			var parts = new string[length];
 
 			for (int i = length - 1; i > -1; i--) parts[i] = _conditionParts.Pop();
-
-			if (format != null) _conditionParts.Push(string.Format(format, parts));
+			return parts;
 		}
 
 		/// <summary>

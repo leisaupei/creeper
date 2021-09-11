@@ -20,13 +20,13 @@ public partial class PeopleModel : ICreeperDbModel
 
 ## 普通查询
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Id == 1 && a.Name == "小明").FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Id == 1 && a.Name == "小明").FirstOrDefault();
 ```
 
 ## Where(string, params object)参数化
 Where方法支持string.Format写法
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>().Where("a.name = {0}", "小明").FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where("a.name = {0}", "小明").FirstOrDefault();
 ```
 > 以参数化传入，即使数据库语句中需要带有单引号的格式，在这里也不需要添加单引号。<br>
 > 错误写法：``Where("a.id = '{0}'", "小明")``
@@ -35,9 +35,9 @@ StudentModel stu = _dbContext.Select<StudentModel>().Where("a.name = {0}", "小�
 使用的是数据库in/not in的语法
 ``` C#
 //WhereNotIn使用方式是一致的，唯一的区别就是输出sql语句的in->not in，这里不再赘述
-//可直接使用字符串WhereIn("a.id", _dbContext.Select<StudentModel>().Field(b => b.Id).Where(b => b.Name == "小明"))
-StudentModel stu = _dbContext.Select<StudentModel>()
-    .WhereIn(a => a.Id, _dbContext.Select<StudentModel>().Field(b => b.Id).Where(b => b.Name == "小明"))
+//可直接使用字符串WhereIn("a.id", _context.Select<StudentModel>().Field(b => b.Id).Where(b => b.Name == "小明"))
+StudentModel stu = _context.Select<StudentModel>()
+    .WhereIn(a => a.Id, _context.Select<StudentModel>().Field(b => b.Id).Where(b => b.Name == "小明"))
     .FirstOrDefault();
 ```
 输出sql语句为
@@ -54,7 +54,7 @@ WHERE a."id" IN (SELECT b."id" FROM "public"."student" b WHERE b."name" = '小�
 ``` C#
 int[] ids = new int[] { 1, 2 }; 
 //可直接使用字符串WhereAny("a.id", ids)
-List<StudentModel> stu = _dbContext.Select<StudentModel>().WhereAny(a => a.Id, ids).ToList();
+List<StudentModel> stu = _context.Select<StudentModel>().WhereAny(a => a.Id, ids).ToList();
 ```
 输出的sql语句为(以Postgresql为例)
 ``` sql
@@ -63,8 +63,8 @@ SELECT a."id", a."age", a."name" FROM "public"."student" WHERE id = ANY(ARRAY[1,
 
 ## Exists/NotExists
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>()
-    .WhereExists(_dbContext.Select<StudentModel>().Where(a => a.Name == "小明"))
+StudentModel stu = _context.Select<StudentModel>()
+    .WhereExists(_context.Select<StudentModel>().Where(a => a.Name == "小明"))
     .FirstOrDefault();
 ```
 输出的sql语句为
@@ -76,7 +76,7 @@ WHERE EXISTS (SELECT 1 FROM "public"."student" WHERE a."name" = '小明') LIMIT 
 ## WhereOrStart/WhereOrEnd
 此方法用于把``Where``与``Where``之间的连接变为Or
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>()
+StudentModel stu = _context.Select<StudentModel>()
     .WhereOrStart()
     .Where(a => a.Stu_no == 1)
     .Where(a => a.Name == "小明")
@@ -94,11 +94,11 @@ SELECT a."id", a."age", a."name" FROM "public"."student" WHERE (a."stu_no" = 1 O
 ``` C#
 int[] ids = new int[] { 1, 2 }; 
 //也可非运算符'!'，!ids.Contains(a.Id)
-List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => ids.Contains(a.Id)).ToList();
+List<StudentModel> stu = _context.Select<StudentModel>().Where(a => ids.Contains(a.Id)).ToList();
 //也可直接把数组放入lambda表达式中
-List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => new[] { 1, 2 }.Contains(a.Id)).ToList();
+List<StudentModel> stu = _context.Select<StudentModel>().Where(a => new[] { 1, 2 }.Contains(a.Id)).ToList();
 //也可反过来使用
-List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => a.Hobby.Contains("跑步")).ToList();
+List<StudentModel> stu = _context.Select<StudentModel>().Where(a => a.Hobby.Contains("跑步")).ToList();
 ```
 
 ### 字符串模糊查询Contains/StartsWith/EndsWith
@@ -107,7 +107,7 @@ List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => a.Hobby.Co
 
 以Contains为例
 ``` C#
-List<StudentModel> stu = _dbContext.Select<StudentModel>().Where(a => a.Name.Contains("明")).ToList();
+List<StudentModel> stu = _context.Select<StudentModel>().Where(a => a.Name.Contains("明")).ToList();
 ```
 输出sql语句为
 ``` sql
@@ -116,7 +116,7 @@ SELECT a."id", a."age", a."name" FROM "public"."student" WHERE a."name" LIKE '%�
 使用``IgnoreCase``忽略大小写，原理只是把``LIKE``替换为``ILIKE``其余一致
 ``` C#
 //使用起始于时, 等价为'小%'
-List<StudentModel> stu = _dbContext.Select<StudentModel>()
+List<StudentModel> stu = _context.Select<StudentModel>()
     .Where(a => a.Name.StartsWith("小", StringComparison.OrdinalIgnoreCase)).ToList();
 ```
 输出sql语句为
@@ -131,43 +131,43 @@ Func<string> func = () =>
 {
     return "小明";
 };
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Name == func()).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Name == func()).FirstOrDefault();
 ```
 
 ### 三元运算符
 ``` C#
 bool cond = false;
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Name == (cond ? "小明" : "")).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Name == (cond ? "小明" : "")).FirstOrDefault();
 ```
 
 ### 数组长度
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Hobby.Length == 2).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Hobby.Length == 2).FirstOrDefault();
 ```
 
 ### 数组相等
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Hobby == new[] { "跑步", "游泳" }).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Hobby == new[] { "跑步", "游泳" }).FirstOrDefault();
 ```
 
 ### 数组索引值比较
 数据库(以Postgresql为例)索引从1开始，但此处写C#语法规则从0开始，框架自动处理+1情况
 ``` C#
 var hobbies = new [] { "跑步", "游泳" }
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Hobby[0] ==  hobbies[0]).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Hobby[0] ==  hobbies[0]).FirstOrDefault();
 ```
 
 ### Coalesce语法
 假设Name在数据库是可null字段
 ``` C#
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => (a.Name ?? "无") ==  "小明").FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => (a.Name ?? "无") ==  "小明").FirstOrDefault();
 ```
 
 ### 其他方法支持
 ``` C#
 //a.Id.Equals(1) -> a.id = 1 
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Id.Equals(1)).FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Id.Equals(1)).FirstOrDefault();
 
 // a.Id.ToString() -> CAST(a.id as VARCHAR) = '1'
-StudentModel stu = _dbContext.Select<StudentModel>().Where(a => a.Id.ToString() == "1").FirstOrDefault();
+StudentModel stu = _context.Select<StudentModel>().Where(a => a.Id.ToString() == "1").FirstOrDefault();
 ```

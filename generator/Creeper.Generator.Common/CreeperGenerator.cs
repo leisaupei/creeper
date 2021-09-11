@@ -1,6 +1,11 @@
 ﻿using Creeper.Driver;
+using Creeper.Generator.Common.Contracts;
+using Creeper.Generator.Common.Extensions;
+using Creeper.Generator.Common.Models;
+using Creeper.Generator.Common.Options;
 using Creeper.Generic;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,68 +16,62 @@ namespace Creeper.Generator.Common
 {
 	public class CreeperGenerator : ICreeperGenerator
 	{
-		private readonly CreeperGeneratorProviderFactory _generatorProviderFactory;
+		private readonly ICreeperGeneratorProviderFactory _generatorProviderFactory;
 		private readonly IConfiguration _cfg;
-
-		public static string ModelSuffix { get; private set; }
-		public static string Namespace { get; private set; }
-		public static string DbStandardSuffix { get; private set; }
-		private static readonly object _lock = new object();
-		public static Action<StreamWriter> WriteAuthorHeader { get; private set; }
-		public CreeperGenerator(CreeperGeneratorProviderFactory generatorProviderFactory, IConfiguration cfg)
+		private readonly IOptionsMonitor<GenerateRules> _optionAccessor;
+		private readonly string _modelSuffix;
+		private readonly string _modelNamespace;
+		private readonly string _dbStandardSuffix;
+		private static bool _writerAuthorHeader;
+		public CreeperGenerator(ICreeperGeneratorProviderFactory generatorProviderFactory, IConfiguration cfg, IOptionsMonitor<GenerateRules> optionAccessor)
 		{
 			_generatorProviderFactory = generatorProviderFactory;
 			_cfg = cfg;
-			ModelSuffix = _cfg["ModelSuffix"];
-			Namespace = _cfg["ModelNamespace"];
-			DbStandardSuffix = _cfg["DbStandardSuffix"];
-			WriteAuthorHeader = AuthorWriter;
+			_optionAccessor = optionAccessor;
+			_modelSuffix = _cfg["ModelSuffix"];
+			_modelNamespace = _cfg["ModelNamespace"];
+			_dbStandardSuffix = _cfg["DbStandardSuffix"];
+			_writerAuthorHeader = Convert.ToBoolean(_cfg["AuthorHeader"]);
 		}
 
-		public void AuthorWriter(StreamWriter writer)
+		public static void WriteAuthorHeader(StreamWriter writer)
 		{
-			if (!Convert.ToBoolean(_cfg["AuthorHeader"])) return;
+			if (!_writerAuthorHeader) return;
 			writer.WriteLine("/* ################################################################################");
 			writer.WriteLine(" * # 此文件由生成器创建或覆盖。see: https://github.com/leisaupei/creeper");
 			writer.WriteLine(" * ################################################################################");
 			writer.WriteLine(" */");
 		}
-		public void Gen(CreeperGenerateBuilder option)
+
+		public void Generate(CreeperGenerateOption option)
 		{
 			if (!Directory.Exists(option.OutputPath))
 				Directory.CreateDirectory(option.OutputPath);
 
-			var packageReference = option.Connections.GroupBy(a => a.DataBaseKind.ToString()).Select(a => a.Key)
+			var packageReference = option.Builders.GroupBy(a => a.Connection.Converter.DataBaseKind.ToString()).Select(a => a.Key)
 				.Select(a => string.Format("\t\t<PackageReference Include=\"Creeper.{2}\" Version=\"{0}\" />{1}", _cfg["CreeperNugetVersion"], Environment.NewLine, a)).ToList();
 
-			GenerateCsproj(option.OutputPath, option.ProjectName, packageReference);
-			var modelPath = CreateDir(option.OutputPath, option.ProjectName);
-			if (option.Sln)
-				CreateSln(option.OutputPath, option.ProjectName);
+			var generateOptions = new CreeperGeneratorGlobalOptions(option, _modelNamespace, _dbStandardSuffix, _modelSuffix, option.Builders.Count > 1);
+			GenerateCsproj(generateOptions, packageReference);
 
-			foreach (var connection in option.Connections)
+			GenerateSln(generateOptions);
+
+			foreach (var builder in option.Builders)
 			{
-				_generatorProviderFactory[connection.DataBaseKind].ModelGenerator(modelPath, option, connection, option.Connections.Count > 1);
+				var kind = builder.Connection.Converter.DataBaseKind;
+				var instance = _generatorProviderFactory[kind].CreateInstance(_optionAccessor.Get(kind.ToString()), generateOptions, builder);
+				instance.Generate();
 			}
-
-			foreach (var kind in option.Connections.GroupBy(a => a.DataBaseKind).Select(a => a.Key))
-			{
-				_generatorProviderFactory[kind].GetFinallyGen().Invoke();
-			}
-
 		}
+
 		/// <summary>
-		/// 
+		/// 创建.csproj项目文件
 		/// </summary>
-		private void GenerateCsproj(string output, string projectName, List<string> packageReference)
+		private void GenerateCsproj(CreeperGeneratorGlobalOptions options, List<string> packageReference)
 		{
-			var path = Path.Combine(output, projectName + "." + DbStandardSuffix);
-			if (!Directory.Exists(path))
-				Directory.CreateDirectory(path);
-			string csproj = Path.Combine(path, $"{projectName}.{DbStandardSuffix}.csproj");
-			if (File.Exists(csproj))
+			if (File.Exists(options.CsProjFileFullName))
 				return;
-			using StreamWriter writer = new StreamWriter(File.Create(csproj), Encoding.UTF8);
+			using StreamWriter writer = new StreamWriter(File.Create(options.CsProjFileFullName), Encoding.UTF8);
 			writer.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">");
 			writer.WriteLine();
 			writer.WriteLine("\t<PropertyGroup>");
@@ -80,7 +79,7 @@ namespace Creeper.Generator.Common
 			writer.WriteLine("\t</PropertyGroup>");
 			writer.WriteLine();
 			writer.WriteLine("\t<ItemGroup>");
-			writer.WriteLine("\t\t<PackageReference Include=\"Creeper\" Version=\"{0}\" />", _cfg["CreeperNugetVersion"]);
+			//writer.WriteLine("\t\t<PackageReference Include=\"Creeper\" Version=\"{0}\" />", _cfg["CreeperNugetVersion"]);
 			foreach (var item in packageReference)
 			{
 				writer.WriteLine(item);
@@ -89,24 +88,26 @@ namespace Creeper.Generator.Common
 			writer.WriteLine();
 			writer.WriteLine("</Project>");
 		}
+
 		/// <summary>
 		/// 创建sln解决方案文件
 		/// </summary>
-		private void CreateSln(string output, string projectName)
+		private void GenerateSln(CreeperGeneratorGlobalOptions options)
 		{
-			if (Directory.GetFiles(output).Any(f => f.Contains(".sln")))
+			if (!options.BaseOptions.Sln) return;
+
+			if (Directory.GetFiles(options.BaseOptions.OutputPath).Any(f => f.Contains(".sln")))
 				return;
-			string sln_file = Path.Combine(output, $"{projectName}.sln");
 
-			if (File.Exists(sln_file)) return;
+			if (File.Exists(options.SlnFileFullName)) return;
 
-			using StreamWriter writer = new StreamWriter(File.Create(sln_file), Encoding.UTF8);
+			using StreamWriter writer = new StreamWriter(File.Create(options.SlnFileFullName), Encoding.UTF8);
 			writer.WriteLine("Microsoft Visual Studio Solution File, Format Version 12.00");
 			writer.WriteLine("# Visual Studio 15>");
 			writer.WriteLine($"VisualStudioVersion = 15.0.26430.13");
 
 			Guid dbId = Guid.NewGuid();
-			writer.WriteLine("Project(\"{0}\") = \"{1}.{3}\", \"{1}.{3}\\{1}.{3}.csproj\", \"{2}\"", Guid.NewGuid(), projectName, dbId, DbStandardSuffix);
+			writer.WriteLine("Project(\"{0}\") = \"{1}.{3}\", \"{1}.{3}\\{1}.{3}.csproj\", \"{2}\"", Guid.NewGuid(), options.BaseOptions.ProjectName, dbId, _dbStandardSuffix);
 			writer.WriteLine($"EndProject");
 
 			writer.WriteLine("Global");
@@ -127,21 +128,6 @@ namespace Creeper.Generator.Common
 			writer.WriteLine("EndGlobal");
 
 		}
-		/// <summary>
-		/// 创建目录
-		/// </summary>
-		private string CreateDir(string output, string projectName)
-		{
-			var modelPath = Path.Combine(output, projectName + "." + DbStandardSuffix, Namespace, "Build");
-			RecreateDir(modelPath);
-			return modelPath;
-		}
 
-		public static void RecreateDir(string modelPath)
-		{
-			if (Directory.Exists(modelPath))
-				Directory.Delete(modelPath, true);
-			Directory.CreateDirectory(modelPath);
-		}
 	}
 }

@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Creeper.Access\Creeper.Access.csproj" />
+    <ProjectReference Include="..\..\src\Creeper.MySql\Creeper.MySql.csproj" />
+    <ProjectReference Include="..\..\src\Creeper.Oracle\Creeper.Oracle.csproj" />
+    <ProjectReference Include="..\..\src\Creeper.PostgreSql\Creeper.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\Creeper.Sqlite\Creeper.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Creeper.SqlServer\Creeper.SqlServer.csproj" />
+    <ProjectReference Include="..\Creeper.Generator.Common\Creeper.Generator.Common.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;1591;1573;0042</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="SqlServer\" />
+  </ItemGroup>
+
+</Project>

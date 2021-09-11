@@ -35,12 +35,12 @@ namespace Creeper.PostgreSql
 	/// </summary>
 	public class NpgsqlTsVectorConverter : JsonConverter<NpgsqlTsVector>
 	{
-		public override NpgsqlTsVector ReadJson(JsonReader reader, Type objectType, [AllowNull] NpgsqlTsVector existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override NpgsqlTsVector ReadJson(JsonReader reader, Type objectType, NpgsqlTsVector existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
 			return NpgsqlTsVector.Parse(reader.Value.ToString());
 		}
 
-		public override void WriteJson(JsonWriter writer, [AllowNull] NpgsqlTsVector value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, NpgsqlTsVector value, JsonSerializer serializer)
 		{
 			writer.WriteValue(value.ToString());
 		}
@@ -50,12 +50,12 @@ namespace Creeper.PostgreSql
 	/// </summary>
 	public class NpgsqlTsQueryConverter : JsonConverter<NpgsqlTsQuery>
 	{
-		public override NpgsqlTsQuery ReadJson(JsonReader reader, Type objectType, [AllowNull] NpgsqlTsQuery existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override NpgsqlTsQuery ReadJson(JsonReader reader, Type objectType, NpgsqlTsQuery existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
 			return NpgsqlTsQuery.Parse(reader.Value.ToString());
 		}
 
-		public override void WriteJson(JsonWriter writer, [AllowNull] NpgsqlTsQuery value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, NpgsqlTsQuery value, JsonSerializer serializer)
 		{
 			writer.WriteValue(value.ToString());
 		}
@@ -124,14 +124,14 @@ namespace Creeper.PostgreSql
 	/// </summary>
 	public class BitArrayConverter : JsonConverter<BitArray>
 	{
-		public override BitArray ReadJson(JsonReader reader, Type objectType, [AllowNull] BitArray existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override BitArray ReadJson(JsonReader reader, Type objectType, BitArray existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
 			if (reader.Value == null)
 				return new BitArray(0);
 			return new BitArray(reader.Value.ToString().Select(f => f == '1').ToArray());
 		}
 
-		public override void WriteJson(JsonWriter writer, [AllowNull] BitArray value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, BitArray value, JsonSerializer serializer)
 		{
 			char[] c = new char[value.Length];
 			for (int i = 0; i < value.Length; i++)
@@ -145,7 +145,7 @@ namespace Creeper.PostgreSql
 	/// </summary>
 	public class PhysicalAddressConverter : JsonConverter<PhysicalAddress>
 	{
-		public override PhysicalAddress ReadJson(JsonReader reader, Type objectType, [AllowNull] PhysicalAddress existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override PhysicalAddress ReadJson(JsonReader reader, Type objectType, PhysicalAddress existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
 			var s = (string)reader.Value;
 			if (string.IsNullOrEmpty(s))
@@ -153,7 +153,7 @@ namespace Creeper.PostgreSql
 			return PhysicalAddress.Parse(s);
 		}
 
-		public override void WriteJson(JsonWriter writer, [AllowNull] PhysicalAddress value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, PhysicalAddress value, JsonSerializer serializer)
 		{
 			writer.WriteValue(value?.ToString());
 		}
@@ -205,7 +205,7 @@ namespace Creeper.PostgreSql
 					writer.WriteEndObject();
 					break;
 				default:
-					throw new NotSupportedException("Property of type geometry only supported PostgisPoint derived class.");
+					throw new CreeperNotSupportedException("Property of type geometry only supported PostgisPoint derived class.");
 			}
 		}
 	}

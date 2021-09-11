@@ -5,21 +5,21 @@
 
 此处仅展示用法
 ``` C#
-ICreeperDbExecute transDbContext = _dbContext.BeginTransaction();
+ICreeperExecute execute = _context.BeginTransaction();
 
-int affrows1 = transDbContext.Update<StudentModel>()
-    .Set(a => a.Name, "小明").Where(a => a.Id == 1).ToAffectedRows();
+int affrows1 = execute.Update<StudentModel>()
+    .Set(a => a.Name, "小明").Where(a => a.Id == 1).ToAffrows();
 
-int affrows2 = transDbContext.Update<StudentModel>()
-    .Set(a => a.Name, "小云").Where(a => a.Id == 2).ToAffectedRows();
+int affrows2 = execute.Update<StudentModel>()
+    .Set(a => a.Name, "小云").Where(a => a.Id == 2).ToAffrows();
 
 if(affrows1 > 0)
 {
-    transDbContext.CommitTransaction();
+    execute.CommitTransaction();
 }
 else 
 {
-    transDbContext.RollbackTransation();
+    execute.RollbackTransation();
 }
 ```
 - ``Transaction``语法糖
@@ -28,30 +28,30 @@ else
 ``CommitTransation``提交事务。
 
 ``` C#
-_dbContext.Transaction(transDbContext =>
+_context.Transaction(execute =>
 {
-    long total = transDbContext.Select<StudentModel>().Count();
-    int affrows = transDbContext.Update<StudentModel>()
+    long total = execute.Select<StudentModel>().Count();
+    int affrows = execute.Update<StudentModel>()
         .Set(a => a.Name, "小明")
         .Where(a => a.Id == 1)
-        .ToAffectedRows(;
+        .ToAffrows(;
 });
 ```
 等价于
 ``` C#
-ICreeperDbExecute transDbContext = _dbContext.BeginTransaction();
+ICreeperDbExecute execute = _context.BeginTransaction();
 try
 {
-    long total = transDbContext.Select<StudentModel>().Count();
-    int affrows = transDbContext.Update<StudentModel>()
+    long total = execute.Select<StudentModel>().Count();
+    int affrows = execute.Update<StudentModel>()
         .Set(a => a.Name, "小明")
         .Where(a => a.Id == 1)
-        .ToAffectedRows();
-    transDbContext.CommitTransaction();
+        .ToAffrows();
+    execute.CommitTransaction();
 }
 catch(Exception e)
 {
-    transDbContext.RollbackTransaction();
+    execute.RollbackTransaction();
     throw e;
 }
 

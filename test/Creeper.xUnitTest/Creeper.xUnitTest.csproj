@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CSRedisCore" Version="3.6.6" />
+    <PackageReference Include="dotMorten.Microsoft.SqlServer.Types" Version="1.3.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+    <PackageReference Include="Xunit.Extensions.Ordering" Version="1.4.5" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.1.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;0090;0059</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\entities\Creeper.Access2007.Test.Entity\Creeper.Access2007.Test.Entity.csproj" />
+    <ProjectReference Include="..\entities\Creeper.MySql.Test.Entity\Creeper.MySql.Test.Entity.csproj" />
+    <ProjectReference Include="..\entities\Creeper.Oracle.Test.Entity\Creeper.Oracle.Test.Entity.csproj" />
+    <ProjectReference Include="..\entities\Creeper.PostgreSql.Test.Entity\Creeper.PostgreSql.Test.Entity.csproj" />
+    <ProjectReference Include="..\entities\Creeper.Sqlite.Test.Entity\Creeper.Sqlite.Test.Entity.csproj" />
+    <ProjectReference Include="..\entities\Creeper.SqlServer.Test.Entity\Creeper.SqlServer.Test.Entity.csproj" />
+  </ItemGroup>
+</Project>

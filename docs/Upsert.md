@@ -24,8 +24,8 @@ public partial class PeopleModel : ICreeperDbModel
 ``` C#
 PeopleModel people = new PeopleModel { Id = 1, Age = 25, Name = "小明" };
 //返回插入行
-PeopleModel result = _dbContext.Upsert(people);
+PeopleModel result = _context.Upsert(people);
 //只返回受影响行数
-int affrows = _dbContext.UpsertOnly(people);
+int affrows = _context.UpsertOnly(people);
 ```
 > 注意：若Table没有主键会抛出异常

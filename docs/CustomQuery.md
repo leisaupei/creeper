@@ -3,11 +3,11 @@
 ## 切换数据库主从
 使用``GetExecute()``方法可以使用其他(主从皆可)数据库配置
 ``` C#
-_dbContext.GetExecute<DbSecondary>().ExecuteNonQuery();
+_context.GetExecute<DbSecondary>().ExecuteNonQuery();
 ```
 或者
 ``` C#
-_dbContext.GetExecute("DbSecondary").ExecuteNonQuery();
+_context.GetExecute("DbSecondary").ExecuteNonQuery();
 ```
 > 建议使用泛型选择配置，减少单词拼错可能性
 ## ExecuteNonQuery
@@ -16,42 +16,42 @@ DbParameter[] ps = new[] {
     new NpgsqlParameter("name", "小明"), 
     new NpgsqlParameter("id", 1)
 };
-int affrows = _dbContext.ExecuteNonQuery("update student set name = @name where id == @id", CommandType.text, ps);
+int affrows = _context.ExecuteNonQuery("update student set name = @name where id == @id", CommandType.text, ps);
 ```
 > ``DbParameter``派生类以PostgreSql为例<br>
-> 如果不是使用默认数据库配置可使用``_dbContext.GetExecute<DbName>().ExecuteNonQuery()``方法，以下同理
+> 如果不是使用默认数据库配置可使用``_context.GetExecute<DbName>().ExecuteNonQuery()``方法，以下同理
 
 ## ExecuteScalar
 ``` C#
 DbParameter[] ps = new[] { new NpgsqlParameter("id", 1) };
-string name = _dbContext.ExecuteScalar<string>("select id from student where id = @id", CommandType.text, ps);
+string name = _context.ExecuteScalar<string>("select id from student where id = @id", CommandType.text, ps);
 ```
 
-## ExecuteDataReader
+## ExecuteReader
 查询包含几个语法糖
-### 返回单行ExecuteDataReaderModel
+### 返回单行ExecuteReaderFirst
 ``` C#
 DbParameter[] ps = new[] { new NpgsqlParameter("id", 1) };
-(int id, string name) stu = _dbContext.ExecuteDataReaderModel<(int, string))>("select id,name from student where id = @id", CommandType.text, ps);
+(int id, string name) stu = _context.ExecuteReaderFirst<(int, string))>("select id,name from student where id = @id", CommandType.text, ps);
 ```
 > 接收泛型与``FirstOrDefault<T>``使用一致，详见[查询表达式-查询返回类型](./Select.md#查询返回类型)
 
-### 返回多行ExecuteDataReaderList
+### 返回多行ExecuteReaderList
 ``` C#
 DbParameter[] ps = new[] { new NpgsqlParameter("id", 1) };
-(int id, string name) stu = _dbContext.ExecuteDataReaderList<(int, string))>("select id,name from student", CommandType.text, ps);
+(int id, string name) stu = _context.ExecuteReaderList<(int, string))>("select id,name from student", CommandType.text, ps);
 ```
 > 接收泛型与``ToList<T>``使用一致，详见[查询表达式-查询返回类型](./Select.md#查询返回类型)
 
-### 使用管道查询ExecuteDataReaderPipe
+### 使用管道查询ExecuteReaderPipe
 返回修改行数和返回结果集不能混合使用，如果混合使用会抛出[NotSupportedException](https://docs.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-5.0)异常
 #### 查询
 ``` C#
 ISqlBuilder[] sqls = new ISqlBuilder[] {
-    _dbContext.Select<StudentModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList(),
-    _dbContext.Select<StudentModel>().Where(a => a.Id == StuPeopleId1).PipeFirstOrDefault<(Guid, string)>("id,name"),
+    _context.Select<StudentModel>().WhereAny(a => a.Id, new[] { StuPeopleId1, StuPeopleId2 }).PipeToList(),
+    _context.Select<StudentModel>().Where(a => a.Id == StuPeopleId1).PipeFirstOrDefault<(Guid, string)>("id,name"),
 };
-object[] obj = _dbContext.ExecuteDataReaderPipe(sqls);
+object[] obj = _context.ExecuteReaderPipe(sqls);
 
 List<StudentModel> info1 = (obj[0] as object[]).OfType<StudentModel>().ToList();
 (Guid, string) info2 = ((Guid, string))obj[1];
@@ -62,14 +62,14 @@ List<StudentModel> info1 = (obj[0] as object[]).OfType<StudentModel>().ToList();
 #### 更新/插入/删除
 ``` C#
 ISqlBuilder[] sqls = new ISqlBuilder[] {
-    _dbContext.Update<StudentModel>().Set(a => a.Name, "小明").Where(a => a.Id == 1).PipeToAffectRows(),
-    _dbContext.Delete<StudentModel>().Where(a => a.Id == 1).PipeToAffectRows(),
-    _dbContext.Insert<StudentModel>().Set(new StudentModel { Id = 3, Name = "小云" }).PipeToAffectRows(),
+    _context.Update<StudentModel>().Set(a => a.Name, "小明").Where(a => a.Id == 1).PipeToAffectRows(),
+    _context.Delete<StudentModel>().Where(a => a.Id == 1).PipeToAffectRows(),
+    _context.Insert<StudentModel>().Set(new StudentModel { Id = 3, Name = "小云" }).PipeToAffectRows(),
 };
-object[] obj = _dbContext.ExecuteDataReaderPipe(sqls);
+object[] obj = _context.ExecuteReaderPipe(sqls);
 var affrows = obj.OfType<int>().Sum();
 ```
-### 自定义ExecuteDataReader
+### 自定义ExecuteReader
 此处是最基础的``DataReader``操作
 ``` C#
 public class Student
@@ -79,7 +79,7 @@ public class Student
 }
 string sql = "select id, name from student";
 List<Student> stus = new List<Student>();
-_dbContext.ExecuteDataReader(reader => {
+_context.ExecuteReader(reader => {
     Student stu = new Student();
     stu.Name = reader["name"].ToString();
     stu.Id = Convert.ToInt32(reader["id"]);

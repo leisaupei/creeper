@@ -22,6 +22,10 @@
 						"Composites": []
 					}
 				}
+			},
+			"FieldIgnore": { //字段忽略, 控制返回与插入, 在特性中声明忽略的成员
+				"Insert": [ "class.grade.id" ], 
+				"Returning": [ "class.grade.id" ]
 			}
 		}
 	},

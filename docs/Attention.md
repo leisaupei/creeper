@@ -10,7 +10,7 @@
 ## Lamda表达式
 查询语句中，如：
 ``` C#
-string stuNo = _dbContext.Select<StudentModel>().Where(a => a.Id == 1).FirstOrDefault(a => a.Stu_no);
+string stuNo = _context.Select<StudentModel>().Where(a => a.Id == 1).FirstOrDefault(a => a.Stu_no);
 ```
 输出的sql语句为
 ``` sql
@@ -21,9 +21,9 @@ SELECT a."stu_no" FROM "public"."student" WHERE a."id" = 1
 
 ## Where条件
 每个``Where``方法之间是用``AND``连接
-- 使用``WhereOrStart/WhereOrEnd``情况除外
+- 使用[``WhereOrStart/WhereOrEnd``](./SelectExpression.md#WhereOrStart/WhereOrEnd)情况除外
 ``` C#
-StudentModel stuNo = _dbContext.Select<StudentModel>()
+StudentModel stuNo = _context.Select<StudentModel>()
     .Where(a => a.Id == 1).Where(a => a.Name == "小明").FirstOrDefault(a => a.Stu_no);
 ```
 输出的sql语句为

@@ -6,9 +6,30 @@ namespace Creeper.Generic
 	/// <summary>
 	/// 联表方式
 	/// </summary>
-	public enum UnionEnum
+	public enum JoinType
 	{
-		INNER_JOIN = 1, LEFT_JOIN, RIGHT_JOIN, LEFT_OUTER_JOIN, RIGHT_OUTER_JOIN
+		INNER_JOIN,
+		/// <summary>
+		/// SQLite不支持此种方式关联查询
+		/// </summary>
+		LEFT_JOIN,
+
+		/// <summary>
+		/// SQLite不支持此种方式关联查询
+		/// </summary>
+		RIGHT_JOIN,
+
+		LEFT_OUTER_JOIN,
+
+		/// <summary>
+		/// SQLite不支持此种方式关联查询
+		/// </summary>
+		RIGHT_OUTER_JOIN,
+
+		/// <summary>
+		/// 仅SQLite支持此关联方式
+		/// </summary>
+		CROSS_JOIN,
 	}
 
 	/// <summary>
@@ -16,7 +37,22 @@ namespace Creeper.Generic
 	/// </summary>
 	public enum PipeReturnType
 	{
-		One = 1, List, Rows
+		/// <summary>
+		/// 返回第一项
+		/// </summary>
+		First = 1,
+		/// <summary>
+		/// 列表
+		/// </summary>
+		List,
+		/// <summary>
+		/// 受影响行数
+		/// </summary>
+		Affrows,
+		/// <summary>
+		/// 受影响行数与结果
+		/// </summary>
+		AffrowsResult,
 	}
 
 	/// <summary>
@@ -24,6 +60,10 @@ namespace Creeper.Generic
 	/// </summary>
 	public enum DataBaseType
 	{
+		/// <summary>
+		/// 根据<see cref="DataBaseTypeStrategy"/>主从策略选择
+		/// </summary>
+		Default = 0,
 		/// <summary>
 		/// 主库
 		/// </summary>
@@ -45,29 +85,29 @@ namespace Creeper.Generic
 		None = 0,
 
 		/// <summary>
-		/// 默认缓存策略, 面对所有使用
+		/// 默认缓存策略
 		/// </summary>
 		Default = 1,
 
 		/// <summary>
-		/// 主键缓存策略, 面对所有使用, 暂时不支持
+		/// 主键缓存策略, 暂时不支持
 		/// </summary>
 		PkCache = 2,
 	}
 
 	/// <summary>
-	/// 数据库主从使用策略
+	/// 数据库主从使用策略, 主要针对Select语句
 	/// </summary>
 	public enum DataBaseTypeStrategy
 	{
 		/// <summary>
-		/// 从库优先, 没有从库会报错
+		/// 只使用从库, 没有从库会报错
 		/// </summary>
-		SecondaryFirst = 1,
+		OnlySecondary = 1,
 		/// <summary>
 		/// 从库优先, 如果从库是Empty自动使用主库
 		/// </summary>
-		SecondaryFirstOfMainIfEmpty = 2,
+		MainIfSecondaryEmpty = 2,
 		/// <summary>
 		/// 只使用主库
 		/// </summary>
@@ -79,32 +119,43 @@ namespace Creeper.Generic
 	/// </summary>
 	public enum DataBaseKind
 	{
-		/// <summary>
-		/// Future
-		/// </summary>
 		SqlServer = 1,
-
-		/// <summary>
-		/// Future
-		/// </summary>
 		Access = 2,
-
-		/// <summary>
-		/// Future
-		/// </summary>
 		MySql = 3,
-
-		/// <summary>
-		/// Future
-		/// </summary>
 		Oracle = 4,
-
 		PostgreSql = 5,
+		Sqlite = 6,
+	}
+
+	/// <summary>
+	/// 数据库的字段名称规范，数据库字段中的'_'始终会输出到属性名称中
+	/// </summary>
+	public enum ColumnNameStyle
+	{
+		/// <summary>
+		/// 默认是全部转小写, 忽略大小写时可选
+		/// </summary>
+		None = 0,
 
 		/// <summary>
-		/// Future
+		/// 转为小写，数据库字段规范是以下情况时选此项，如: username, user_name
 		/// </summary>
-		Sqlite = 6,
+		ToLower = 1,
+
+		/// <summary>
+		/// 转为大写，数据库字段规范是以下情况时选此项，如: USERNAME, USER_NAME
+		/// </summary>
+		ToUpper = 2,
+
+		/// <summary>
+		/// 转为驼峰，数据库字段规范是以下情况时选此项，如: userName, user_Name
+		/// </summary>
+		Camel = 3,
+
+		/// <summary>
+		///	转为帕斯卡，数据库字段规范是以下情况时选此项，如: UserName, User_Name
+		/// </summary>
+		Pascal = 4,
 	}
 
 	/// <summary>

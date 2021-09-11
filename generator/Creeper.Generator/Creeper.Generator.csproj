@@ -2,8 +2,21 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
     <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>8.0</LangVersion>
+    <Authors>leisaupei</Authors>
+    <Company>leisaupei@163.com</Company>
+    <Description>Creeper Generator .Net Core CLI Tool</Description>
+    <PackageProjectUrl>https://github.com/leisaupei/creeper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>1.1.0</Version>
+    <PackageLicenseFile></PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>leisaupei</Copyright>
+    <FileVersion>1.1.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,13 +27,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Creeper.MySql.Generator\Creeper.MySql.Generator.csproj" />
-    <ProjectReference Include="..\Creeper.PostgreSql.Generator\Creeper.PostgreSql.Generator.csproj" />
-    <ProjectReference Include="..\Creeper.SqlServer.Generator\Creeper.SqlServer.Generator.csproj" />
+    <ProjectReference Include="..\Creeper.Generator.Provider\Creeper.Generator.Provider.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.mysql.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.postgresql.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

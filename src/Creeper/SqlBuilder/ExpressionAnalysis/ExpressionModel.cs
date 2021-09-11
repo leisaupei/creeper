@@ -2,7 +2,7 @@ using System.Data.Common;
 using System.Collections.Generic;
 namespace Creeper.SqlBuilder.ExpressionAnalysis
 {
-    public class ExpressionModel
+    internal class ExpressionModel
     {
         public ExpressionModel(string cmdText, DbParameter[] parameters, string[] alias)
         {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Creeper.Driver;
 using Creeper.Extensions;
 using Creeper.Generic;
 namespace Creeper.SqlBuilder.ExpressionAnalysis
@@ -40,32 +41,14 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// </summary>
 		/// <param name="mb"></param>
 		/// <returns></returns>
-		public static string ToDatebaseField(this MemberExpression mb)
-			=> string.Concat(mb.ToString().ToLower().Replace(".", ".\""), '"');
+		public static string ToDatebaseField(this MemberExpression mb, CreeperConverter converter) => string.Concat(mb.Expression, '.', converter.WithQuote(converter.CaseInsensitiveTranslator(mb.Member.Name)));
 
 		/// <summary>
 		/// 递归member表达式, 针对optional字段, 从 a.xxx.Value->a.xxx
 		/// </summary>
 		/// <param name="node"></param>
 		/// <returns></returns>
-		public static MemberExpression GetOriginExpression(this MemberExpression node)
-		{
-			if (node.NodeType == ExpressionType.MemberAccess && node.Expression is MemberExpression me)
-				return GetOriginExpression(me);
-			return node;
-		}
-
-		/// <summary>
-		/// 获取是否字段加双引号
-		/// </summary>
-		/// <param name="dataBaseKind"></param>
-		/// <returns></returns>
-		public static bool GetWithQuotationMarks(this DataBaseKind dataBaseKind)
-			=> dataBaseKind switch
-			{
-				DataBaseKind.PostgreSql or DataBaseKind.Oracle => true,
-				_ => false,
-			};
+		public static MemberExpression GetOriginExpression(this MemberExpression node) => node.NodeType == ExpressionType.MemberAccess && node.Expression is MemberExpression me ? me.GetOriginExpression() : node;
 
 		/// <summary>
 		/// 运算符转换
@@ -75,54 +58,21 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		public static string OperatorCast(this ExpressionType type)
 			=> ExpressionOperator.TryGetValue(type, out var value)
 			? value
-			: throw new NotSupportedException(type + "is not supported.");
+			: throw new CreeperNotSupportedException(type + "is not supported.");
 
 		/// <summary>
 		/// 空与非空运算符转换
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public static string NullableOperatorCast(this ExpressionType type)
-			=> type == ExpressionType.Equal
-			? "IS NULL"
-			: (type == ExpressionType.NotEqual ? "IS NOT NULL" : type.OperatorCast());
+		public static string NullableOperatorCast(this ExpressionType type) => type == ExpressionType.Equal ? "IS NULL" : (type == ExpressionType.NotEqual ? "IS NOT NULL" : type.OperatorCast());
 
 		/// <summary>
 		/// 空与非空运算符转换
 		/// </summary>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public static bool IsBracketsExpressionType(this ExpressionType type)
-			=> type == ExpressionType.AndAlso || type == ExpressionType.OrElse;
-
-		/// <summary>
-		/// 获得like语句链接符
-		/// </summary>
-		/// <param name="dataBaseKind"></param>
-		/// <returns></returns>
-		public static string GetStrConnectWords(this DataBaseKind dataBaseKind)
-			=> dataBaseKind switch
-			{
-				DataBaseKind.PostgreSql or DataBaseKind.Oracle or DataBaseKind.MySql or DataBaseKind.Sqlite => "||",
-				_ => "+",
-			};
-
-		/// <summary>
-		/// 转换数据库主从
-		/// </summary>
-		/// <param name="dataBaseType"></param>
-		/// <param name="dbName"></param>
-		/// <returns></returns>
-		public static string ChangeDataBaseKind(this DataBaseType dataBaseType, string dbName)
-		{
-			if (dataBaseType == DataBaseType.Secondary && dbName.EndsWith(DataBaseType.Main.ToString()))
-				dbName = dbName.Replace(DataBaseType.Main.ToString(), DataBaseType.Secondary.ToString());
-
-			if (dataBaseType == DataBaseType.Main && dbName.EndsWith(DataBaseType.Secondary.ToString()))
-				dbName = dbName.Replace(DataBaseType.Secondary.ToString(), DataBaseType.Main.ToString());
-
-			return dbName;
-		}
+		public static bool IsBracketsExpressionType(this ExpressionType type) => type == ExpressionType.AndAlso || type == ExpressionType.OrElse;
 
 		/// <summary>
 		/// 其获取表达式类型并拼接左右条件
@@ -131,13 +81,13 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <param name="right"></param>
 		/// <param name="left"></param>
 		/// <returns></returns>
-		public static string GetCondition(this BinaryExpression expression, string left, string right)
+		public static string GetCondition(this BinaryExpression expression, string left, string right, CreeperConverter converter)
 		{
 			string cond = null;
 			switch (expression.NodeType)
 			{
 				case ExpressionType.Coalesce:
-					cond = string.Format("COALESCE({0},{1})", left.Trim(), right);
+					cond = converter.CallCoalesce(left.Trim(), right, null);
 					break;
 
 				case ExpressionType.And:
@@ -180,51 +130,12 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		}
 
 		/// <summary>
-		/// 获取字符串数据转换类型
-		/// </summary>
-		/// <param name="dataBaseKind"></param>
-		/// <returns></returns>
-		public static string GetCastBaseStringDbType(this DataBaseKind dataBaseKind)
-		 => dataBaseKind switch
-		 {
-			 DataBaseKind.PostgreSql or DataBaseKind.MySql => "VARCHAR",
-			 _ => "",
-		 };
-
-		/// <summary>
-		/// 获取表达式是否可用的集合类型
-		/// </summary>
-		/// <param name="expression"></param>
-		/// <returns></returns>
-		public static bool IsImplementation<T>(this Expression expression)
-		{
-			return typeof(T).IsAssignableFrom(expression.Type);
-		}
-
-		/// <summary>
-		/// IEnumerable表达式转成类型为Array的表达式
-		/// </summary>
-		/// <param name="expression"></param>
-		/// <returns></returns>
-		public static Expression ToArrayExpression(this Expression expression)
-		{
-			if (!expression.IsImplementation<IList>()) //因为数据库不支持非IList类型的集合, 所以要转一下
-			{
-				var obj = expression.GetExpressionValue(); //获取表达式的值
-				obj = obj.GetType().GetMethod("ToArray").Invoke(obj, new object[0]); //调用ToArray()方法
-
-				expression = Expression.Constant(obj);
-			}
-			return expression;
-		}
-
-		/// <summary>
 		/// 把表达式转换为常量表达式
 		/// </summary>
 		/// <param name="expression"></param>
 		/// <param name="constantType">常量表达式的类型</param>
 		/// <returns></returns>
-		public static ConstantExpression GetConstantFromExression(this Expression expression, Type constantType)
+		public static ConstantExpression GetConstantFromExpression(this Expression expression, Type constantType)
 		{
 			var obj = expression.GetExpressionValue();
 			return Expression.Constant(obj, constantType);
@@ -237,8 +148,5 @@ namespace Creeper.SqlBuilder.ExpressionAnalysis
 		/// <returns></returns>
 		public static object GetExpressionValue(this Expression expression)
 			=> Expression.Lambda(expression).Compile().DynamicInvoke();
-
-
-
 	}
 }
