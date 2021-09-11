@@ -54,7 +54,6 @@ namespace Creeper.Generator.Provider.PostgreSql
 		/// <returns></returns>
 		public static string ConvertPgDbTypeToCSharpType(string dbType)
 		{
-			BitArray
 			switch (dbType)
 			{
 				case "bit": return "BitArray";

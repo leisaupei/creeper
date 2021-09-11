@@ -2,7 +2,7 @@
 - `` GenerateRules``中，已定义好的元素一般不需要删除，只需添加排除项即可。
 - `` GenerateRules``支持使用'*'通配符。
 - 命名规则可根据需求修改。
-- 快速实现，可参照[示例appsettings.json](/generator/Creeper.Generator/appsettings.json)。
+- 快速实现，可参照[示例appsettings.json](../generator/Creeper.Generator/appsettings.json)。
 ``` json
 {
 	"GenerateRules": { //全局配置
