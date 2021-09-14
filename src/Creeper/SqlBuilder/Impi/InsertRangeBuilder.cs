@@ -121,7 +121,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// 返回受影响行数
 		/// </summary>
 		/// <returns></returns>
-		public ISqlBuilder PipeToAffrows() => Pipe<int>(PipeReturnType.Affrows);
+		public ISqlBuilder ToAffrowsPipe() => Pipe<int>(PipeReturnType.Affrows);
 
 		/// <summary>
 		/// 插入数据库并返回数据

@@ -9,11 +9,11 @@
     <RepositoryUrl>https://github.com/leisaupei/creeper</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <PackageLicenseFile></PackageLicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>leisaupei</Copyright>
-    <FileVersion>1.1.0.0</FileVersion>
+    <FileVersion>1.1.1.0</FileVersion>
   </PropertyGroup>
 
 
@@ -25,10 +25,7 @@
   <ItemGroup>
     <PackageReference Include="System.Data.OleDb" Version="5.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Creeper\Creeper.csproj" />
   </ItemGroup>
-
-
 </Project>

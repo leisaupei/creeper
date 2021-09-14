@@ -9,6 +9,7 @@ using System;
 using Creeper.xUnitTest.Extensions;
 using System.Linq;
 using System.ComponentModel;
+using Creeper.Generic;
 
 namespace Creeper.xUnitTest.MySql
 {
@@ -26,6 +27,20 @@ namespace Creeper.xUnitTest.MySql
 		{
 			var result1 = Context.Select<StudentModel>().Count();
 			Assert.True(result1 >= 0);
+		}
+
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<PeopleModel>().CountDistinct(a => a.Name);
+			Assert.True(count > 0);
+		}
+
+		[Fact]
+		public void Distinct()
+		{
+			//var names = Context.Select<PeopleModel>().Distinst().ToList(a => a.Name);
+			//Assert.True(names.Count > 0);
 		}
 
 		[Fact, Description("MySqle不支持EXCEPT语法")]

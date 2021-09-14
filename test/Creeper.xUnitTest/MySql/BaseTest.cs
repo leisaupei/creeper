@@ -32,7 +32,7 @@ namespace Creeper.xUnitTest.MySql
 					a.UseCache<HashtableTestDbCache>();
 					a.UseConnectionString(TestMainConnectionString);
 					a.UseSecondaryConnectionString(TestSecondaryConnectionString);
-					a.UseMySqlGeometry();
+					a.UseGeometry();
 				});
 			});
 			var serviceProvider = services.BuildServiceProvider();

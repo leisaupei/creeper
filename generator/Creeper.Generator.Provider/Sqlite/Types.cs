@@ -20,11 +20,19 @@ namespace Creeper.Generator.Provider.Sqlite
 		public static string ConvertSqliteDataTypeToCSharpType(string dataType)
 		{
 			int length = 0;
+			int scale = 0;
 			if (dataType.Contains("("))
 			{
 				var strs = dataType.Split('(');
 				dataType = strs[0];
-				length = int.Parse(strs[1].Split(')')[0]);
+				var ls = strs[1].Trim(')');
+				if (ls.Contains(','))
+				{
+					length = int.Parse(ls.Split(',')[0]);
+					scale = int.Parse(ls.Split(',')[1]);
+				}
+				else
+					length = int.Parse(ls);
 			}
 			string cSharpType = "object";
 			switch (dataType.ToLower().Trim())
@@ -35,6 +43,18 @@ namespace Creeper.Generator.Provider.Sqlite
 					if (length == 1) cSharpType = "bool";
 					if (length > 4 && length <= 8) cSharpType = "long";
 					if (length == 2) cSharpType = "short";
+					break;
+				case "bool":
+				case "boolean":
+					cSharpType = "bool";
+					break;
+
+				case "char":
+					cSharpType = length switch
+					{
+						var l when l == 36 => "Guid",
+						_ => "string",
+					};
 					break;
 
 				case "tinyint":
@@ -63,21 +83,29 @@ namespace Creeper.Generator.Provider.Sqlite
 				case "nvarchar":
 				case "text":
 				case "clob":
-					cSharpType = "string"; break;
-
+					cSharpType = "string";
+					break;
+				case "time":
+					cSharpType = "TimeSpan";
+					break;
+				case "datetime":
+					cSharpType = "DateTime"; break;
 				case "blob":
 				case "binary":
 				case "varbinary":
 					cSharpType = "byte[]"; break;
-
-				case "numeric":
 				case "decimal":
+				case "numeric":
+					cSharpType = "decimal";
+					break;
+
+				case "float":
+					cSharpType = "float";
+					break;
 				case "money":
 				case "real":
 				case "double":
 				case "double precision":
-				case "float":
-
 					cSharpType = "double"; break;
 			}
 			return cSharpType;

@@ -16,7 +16,6 @@ namespace Creeper.xUnitTest.Sqlite
 {
 	public class SelectTest : BaseTest, ISelectTest
 	{
-		const long Pid = 1;
 
 		[Fact]
 		public void Avg()
@@ -30,6 +29,20 @@ namespace Creeper.xUnitTest.Sqlite
 		{
 			var result1 = Context.Select<ProductModel>().Count();
 			Assert.True(result1 >= 0);
+		}
+
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<ProductModel>().CountDistinct(a => a.Name);
+			Assert.True(count >= 0);
+		}
+
+		[Fact]
+		public void Distinct()
+		{
+			//var names = Context.Select<ProductModel>().Distinst().ToList(a => a.Name);
+			//Assert.True(names.Count >= 0);
 		}
 
 		[Fact, Description("SQLite不支持EXCEPT ALL语法")]

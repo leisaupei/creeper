@@ -11,8 +11,11 @@ namespace Creeper.xUnitTest.Extensions
 	public class RedisDbCache : ICreeperCache
 	{
 		private readonly CSRedis.CSRedisClient _redisClient = null;
+
+		public int ExpireSeconds { get; }
 		public RedisDbCache()
 		{
+			ExpireSeconds = 60;
 			_redisClient = new CSRedis.CSRedisClient("192.168.1.15:6379,defaultDatabase=13,password=123456,prefix=test,abortConnect=false");
 		}
 		private static object Deserialize(string value, Type type)
@@ -36,6 +39,7 @@ namespace Creeper.xUnitTest.Extensions
 
 		private static readonly TimeSpan _globalExpireTime = TimeSpan.FromMinutes(10);
 
+
 		public bool Exists(string key) => _redisClient.Exists(key);
 
 		public Task<bool> ExistsAsync(string key) => _redisClient.ExistsAsync(key);
@@ -48,9 +52,9 @@ namespace Creeper.xUnitTest.Extensions
 
 		public Task RemoveAsync(params string[] keys) => _redisClient.DelAsync(keys);
 
-		public bool Set(string key, object value, TimeSpan? expireTime) => _redisClient.Set(key, Serialize(value), expireTime ?? _globalExpireTime);
+		public bool Set(string key, object value, int expireTime) => _redisClient.Set(key, Serialize(value), expireTime);
 
-		public Task<bool> SetAsync(string key, object value, TimeSpan? expireTime) => _redisClient.SetAsync(key, Serialize(value), expireTime ?? _globalExpireTime);
+		public Task<bool> SetAsync(string key, object value, int expireTime) => _redisClient.SetAsync(key, Serialize(value), expireTime);
 
 		public void Dispose()
 		{

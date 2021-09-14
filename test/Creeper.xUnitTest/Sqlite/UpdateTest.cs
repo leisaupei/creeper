@@ -118,5 +118,14 @@ namespace Creeper.xUnitTest.Sqlite
 			var affrows = Context.Update(info).Inc(a => a.Stock, 20, 0).ToAffrows();
 			Assert.Equal(1, affrows);
 		}
+
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<IdenTestModel>().Where(a => a.Name != "Trick").FirstOrDefault();
+			info.Name = "Trick";
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
+		}
 	}
 }

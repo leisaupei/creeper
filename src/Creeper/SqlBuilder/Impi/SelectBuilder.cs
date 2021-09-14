@@ -19,6 +19,7 @@ namespace Creeper.SqlBuilder.Impi
 	internal sealed class SelectBuilder<TModel> : WhereBuilder<ISelectBuilder<TModel>, TModel>, ISelectBuilder<TModel> where TModel : class, ICreeperModel, new()
 	{
 		#region Identity
+		private bool _distinct;
 		private string _groupBy;
 		private string _orderBy;
 		private int? _limit;
@@ -153,6 +154,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// <returns></returns>
 		public ISelectBuilder<TModel> GroupBy<TSource>(Expression<Func<TSource, dynamic>> selector) where TSource : ICreeperModel, new()
 			=> GroupBy(Translator.GetSelector(selector));
+
 		#endregion
 
 		#region UNION/EXCEPT/INTERSECT
@@ -653,6 +655,18 @@ namespace Creeper.SqlBuilder.Impi
 		/// <returns></returns>
 		public ValueTask<long> CountAsync(CancellationToken cancellationToken = default)
 			=> SetFields("COUNT(1)").ToScalarAsync<long>(cancellationToken);
+
+		public long CountDistinct(Expression<Func<TModel, dynamic>> selector)
+			=> CountDistinct<TModel>(selector);
+
+		public ValueTask<long> CountDistinctAsync(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default)
+			=> CountDistinctAsync<TModel>(selector, cancellationToken);
+
+		public long CountDistinct<TSource>(Expression<Func<TSource, dynamic>> selector)
+			=> SetFields($"COUNT(DISTINCT {Translator.GetExpression(selector).CmdText})").ToScalar<long>();
+
+		public ValueTask<long> CountDistinctAsync<TSource>(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default)
+			=> SetFields($"COUNT(DISTINCT {Translator.GetExpression(selector).CmdText})").ToScalarAsync<long>(cancellationToken);
 
 		/// <summary>
 		/// 取最大值
@@ -1641,9 +1655,6 @@ namespace Creeper.SqlBuilder.Impi
 			if (!string.IsNullOrEmpty(fields)) Fields = fields;
 			return this;
 		}
-
-
-
 
 		#endregion
 	}

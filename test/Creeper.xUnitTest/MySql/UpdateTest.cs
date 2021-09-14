@@ -74,5 +74,14 @@ namespace Creeper.xUnitTest.MySql
 			Assert.Equal(1, result.AffectedRows);
 			Assert.Equal((info.Age ?? 0) + 10, result.Value.Age);
 		}
+
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<PeopleModel>().Where(a => a.Name != "Trick").FirstOrDefault();
+			info.Name = "Trick";
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
+		}
 	}
 }

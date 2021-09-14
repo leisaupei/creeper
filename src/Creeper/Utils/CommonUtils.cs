@@ -9,7 +9,7 @@ namespace Creeper.Utils
 
 		public static object SetNewGuid(object value)
 		{
-			if (value is Guid g && g == default)
+			if (value is Guid g && (g == Guid.Empty || g == default))
 				value = Guid.NewGuid();
 			return value;
 		}

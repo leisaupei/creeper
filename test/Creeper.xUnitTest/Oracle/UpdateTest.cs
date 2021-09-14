@@ -11,7 +11,7 @@ namespace Creeper.xUnitTest.Oracle
 {
 	public class UpdateTest : BaseTest, IUpdateTest
 	{
-		private long Id => Context.Select<IdenPkTestModel>().Max(a => a.Id);
+		private static long Id => Context.Select<IdenPkTestModel>().Max(a => a.Id);
 
 		[Fact]
 		public void Inc()
@@ -62,6 +62,15 @@ namespace Creeper.xUnitTest.Oracle
 		[Fact(Skip = "Oracle暂不支持UPDATE RETURNING操作")]
 		public void UpdateReturning()
 		{
+		}
+
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<UniPkTestModel>().Where(a => a.Name != "Trick").FirstOrDefault();
+			info.Name = "Trick";
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
 		}
 	}
 }

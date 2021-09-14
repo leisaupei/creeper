@@ -45,7 +45,7 @@ namespace Creeper.SqlBuilder
 	/// 
 	/// </summary>
 	/// <typeparam name="TBuilder"></typeparam>
-	public interface ISqlBuilder<TBuilder> : ISqlBuilder 
+	public interface ISqlBuilder<TBuilder> : ISqlBuilder
 		where TBuilder : class, ISqlBuilder
 	{
 		/// <summary>
@@ -80,7 +80,13 @@ namespace Creeper.SqlBuilder
 		/// 使用数据库缓存, 仅支持FirstOrDefault/ToScalar方法, 注意: 此处条件必须是重写了ToString或者其他基础类型,
 		/// </summary>
 		/// <returns></returns>
-		TBuilder ByCache(TimeSpan? expireTime = null);
+		TBuilder ByCache(TimeSpan? expireTime);
+
+		/// <summary>
+		/// 使用数据库缓存, 仅支持FirstOrDefault/ToScalar方法, 注意: 此处条件必须是重写了ToString或者其他基础类型,
+		/// </summary>
+		/// <returns></returns>
+		TBuilder ByCache(int? expireSeconds = null);
 
 	}
 }

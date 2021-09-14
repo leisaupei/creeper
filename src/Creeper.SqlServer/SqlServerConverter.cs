@@ -27,7 +27,6 @@ namespace Creeper.SqlServer
 		protected override string IdentityKeyDefault { get; } = null;
 
 		/// <summary>
-		/// codename	RTM
 		/// 2019	 	15.0.2000.5
 		/// 2017	 	14.0.1000.169
 		/// 2016	 	13.00.1601.5
@@ -44,17 +43,11 @@ namespace Creeper.SqlServer
 
 		public override DbConnection GetDbConnection(string connectionString) => new SqlConnection(connectionString);
 
-		protected override object ConvertDbData(object value, Type convertType)
-		{
-			return base.ConvertDbData(value, convertType);
-		}
-
 		protected override void Initialization(string connectionString)
 		{
 			SetServerVersion(connectionString);
 			base.Initialization(connectionString);
 		}
-
 		protected override string GetSelectSql(string columns, string table, string alias, IEnumerable<string> wheres, string groupBy, string having, string orderBy, int? limit, int? offset, string union, string except, string intersect, string join, string afterTableStr)
 		{
 			return IsUseFetchRows
@@ -75,8 +68,10 @@ namespace Creeper.SqlServer
 				select top (@pageSize) * from table order by id asc
 			*/
 
-			var isSkip = (offset ?? 0) > 0;
-			if (!isSkip && limit.HasValue) columns = string.Concat($"TOP ({limit}) ", columns);
+			var isSkip = (offset ?? 0) > 0; //是否包含跳过行
+			if (!isSkip && limit.HasValue) //此情况是仅取前多少条数据, 使用原来的TOP语法
+				columns = string.Concat($"TOP ({limit}) ", columns);
+
 			var sqlText = new StringBuilder($"SELECT {columns} FROM {table} AS {alias}").AppendLine();
 			if (!string.IsNullOrWhiteSpace(afterTableStr)) sqlText.AppendLine(afterTableStr);
 			if (!string.IsNullOrEmpty(join)) sqlText.AppendLine(join);
@@ -99,7 +94,7 @@ namespace Creeper.SqlServer
 		}
 
 		/// <summary>
-		/// sqlserver版本小于2012 的分页查询
+		/// sqlserver版本小于2012的分页查询, 使用开窗函数
 		/// </summary>
 		/// <returns></returns>
 		private static string SelectRowNumber(string columns, string table, string alias, IEnumerable<string> wheres, string groupBy, string having, string orderBy, int? limit, int? offset, string union, string except, string intersect, string join, string afterTableStr)
@@ -111,12 +106,16 @@ namespace Creeper.SqlServer
 				SELECT TOP (10) * FROM (SELECT *, ROW_NUMBER() OVER(ORDER BY [DateTime] ASC) AS [_RowIndex] FROM [dbo].[Table] a) T 
 				WHERE [_RowIndex] > 10 ORDER BY [_RowIndex] ASC
 			 */
-			var isSkip = (offset ?? 0) > 0;
-			var top = limit.HasValue ? $" TOP ({limit})" : null;
+			var isSkip = (offset ?? 0) > 0; //此种情况需要用到开窗函数
+			var top = limit.HasValue ? $" TOP ({limit})" : null; //取limit条数据
 			var innerColumn = columns;
+			bool hasOrderBy = !string.IsNullOrEmpty(orderBy);
 
-			if (isSkip) innerColumn = string.Concat(columns, $", ROW_NUMBER() OVER(ORDER BY {(string.IsNullOrEmpty(orderBy) ? "GetDate()" : orderBy)}) AS [_RowIndex]");
-			else if (limit > 0) innerColumn = string.Concat(top, columns);
+			if (isSkip) //使用开窗函数
+				innerColumn = string.Concat(columns, $", ROW_NUMBER() OVER(ORDER BY {(hasOrderBy ? orderBy : "GetDate()")}) AS [_RowIndex]");
+			else if (limit > 0) //仅取前limit条数据时
+				innerColumn = string.Concat(top, columns);
+
 			var sqlText = new StringBuilder($"SELECT {innerColumn} FROM {table} AS {alias}").AppendLine();
 			if (!string.IsNullOrWhiteSpace(afterTableStr)) sqlText.AppendLine(afterTableStr);
 			if (!string.IsNullOrEmpty(join)) sqlText.AppendLine(join);
@@ -130,13 +129,15 @@ namespace Creeper.SqlServer
 
 				if (!string.IsNullOrEmpty(having)) sqlText.Append("HAVING ").AppendLine(having);
 			}
+
 			if (isSkip)
 			{
 				columns = _aliasRegex.Replace(columns, "");
 				sqlText.Insert(0, $"SELECT{top} {columns} FROM (" + Environment.NewLine);
 				sqlText.Append($") _RowTable WHERE [_RowIndex] > {offset} ORDER BY [_RowIndex] ASC");
 			}
-			else if (!string.IsNullOrEmpty(orderBy)) sqlText.Append("ORDER BY ").AppendLine(orderBy);
+			else if (hasOrderBy)
+				sqlText.Append("ORDER BY ").AppendLine(orderBy);
 
 			return sqlText.ToString().TrimEnd();
 		}
@@ -215,7 +216,7 @@ WHEN NOT MATCHED THEN INSERT({string.Join(",", insertKeys)}) VALUES({string.Join
 
 		protected override string ExplainLike(bool isIngoreCase, bool isNot)
 		{
-			return string.Concat("{0}", isNot ? "NOT" : null, " LIKE {1}", isIngoreCase ? "" : " COLLATE CHINESE_PRC_CS_AI");
+			return string.Concat("{0}", isNot ? " NOT" : null, " LIKE {1}", isIngoreCase ? "" : " COLLATE CHINESE_PRC_CS_AI");
 		}
 	}
 }

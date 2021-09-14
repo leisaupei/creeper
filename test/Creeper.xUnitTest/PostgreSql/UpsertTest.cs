@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Extensions.Ordering;
 using System.Data.Common;
 using Npgsql;
 using Creeper.SqlBuilder;

@@ -28,7 +28,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// 管道模式
 		/// </summary>
 		/// <returns></returns>
-		public ISqlBuilder PipeToAffrows() => Pipe<int>(PipeReturnType.Affrows);
+		public ISqlBuilder ToAffrowsPipe() => Pipe<int>(PipeReturnType.Affrows);
 
 		/// <summary>
 		/// 返回修改行数

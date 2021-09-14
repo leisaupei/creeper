@@ -132,16 +132,14 @@ order by a.COLUMN_ID
 
 		private void GetLongResult(Action<OracleDataReader> action, string sql)
 		{
-			using (OracleConnection connection = (OracleConnection)GenerateConnection.Connection.GetConnection())
+			using OracleConnection connection = (OracleConnection)GenerateConnection.Connection.GetConnection();
+			var cmd = connection.CreateCommand();
+			cmd.InitialLONGFetchSize = -1;
+			cmd.CommandText = sql;
+			var reader = cmd.ExecuteReader();
+			while (reader.Read())
 			{
-				var cmd = connection.CreateCommand();
-				cmd.InitialLONGFetchSize = -1;
-				cmd.CommandText = sql;
-				var reader = cmd.ExecuteReader();
-				while (reader.Read())
-				{
-					action.Invoke(reader);
-				}
+				action.Invoke(reader);
 			}
 		}
 

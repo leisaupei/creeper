@@ -9,3 +9,4 @@ launchSettings.json
 *.user
 .DS_Store
 .vscode/
+/updatelog

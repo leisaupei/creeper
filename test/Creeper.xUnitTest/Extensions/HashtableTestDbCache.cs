@@ -17,6 +17,8 @@ namespace Creeper.xUnitTest.Extensions
 	{
 		private readonly Hashtable _redisStorage = new Hashtable();
 
+		public int ExpireSeconds { get; } = 0;
+
 		public HashtableTestDbCache()
 		{
 		}
@@ -58,18 +60,19 @@ namespace Creeper.xUnitTest.Extensions
 
 		public Task RemoveAsync(params string[] keys) { Remove(keys); return Task.CompletedTask; }
 
-		public bool Set(string key, object value, TimeSpan? expireTime = null)
-		{
-			_redisStorage[key] = Serialize(value);
-			return true;
-		}
-
-		public Task<bool> SetAsync(string key, object value, TimeSpan? expireTime = null) => Task.FromResult(Set(key, value, expireTime));
-
 		public void Dispose()
 		{
 			_redisStorage.Clear();
 			GC.SuppressFinalize(this);
 		}
+
+		public bool Set(string key, object value, int expireSeconds)
+		{
+			_redisStorage[key] = Serialize(value);
+			return true;
+		}
+
+		public Task<bool> SetAsync(string key, object value, int expireSeconds)
+			=> Task.FromResult(Set(key, value, expireSeconds));
 	}
 }

@@ -11,6 +11,14 @@
 		/// </summary>
 		void Count();
 		/// <summary>
+		/// 返回总条数
+		/// </summary>
+		void CountDistinct();
+		/// <summary>
+		/// 返回总条数
+		/// </summary>
+		void Distinct();
+		/// <summary>
 		/// 返回首条数据, 没有返回default
 		/// </summary>
 		void FirstOrDefault();

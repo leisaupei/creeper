@@ -17,10 +17,13 @@ namespace Creeper.xUnitTest.SqlServer
 		[Description("测试自增主键")]
 		public void IdentityPk()
 		{
-			var info = new IdenPkModel { Name = "中国人" };
-			var result = Context.InsertResult(info);
-			Assert.Equal(1, result.AffectedRows);
-			Assert.True(result.Value.Id > 0);
+			for (int i = 0; i < 7; i++)
+			{
+				var info = new IdenPkModel { Name = "中国人" };
+				var result = Context.InsertResult(info);
+				Assert.Equal(1, result.AffectedRows);
+				Assert.True(result.Value.Id > 0);
+			}
 		}
 
 		[Fact]

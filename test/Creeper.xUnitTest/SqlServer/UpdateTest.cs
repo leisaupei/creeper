@@ -89,5 +89,14 @@ namespace Creeper.xUnitTest.SqlServer
 			//Assert.Equal(1, affrows2);
 			//Assert.Equal(1, affrows3);
 		}
+
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<IdenPkUniColModel>().Where(a => a.Name != "Trick").FirstOrDefault();
+			info.Name = "Trick";
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
+		}
 	}
 }

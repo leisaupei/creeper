@@ -38,6 +38,24 @@ namespace Creeper.Sqlite
 			SetServerVersion(connectionString);
 			base.Initialization(connectionString);
 		}
+
+		protected override object ConvertDbData(object value, Type convertType)
+		{
+			return convertType switch
+			{
+				var t when t == typeof(TimeSpan) => ((DateTime)value).TimeOfDay,
+				var t when t == typeof(Guid) => Guid.Parse(value.ToString()),
+				_ => base.ConvertDbData(value, convertType),
+			};
+
+		}
+		protected override bool TrySetSpecialDbParameter(out string format, ref object value)
+		{
+			if (value is Guid g)
+				value = g.ToString();
+			return base.TrySetSpecialDbParameter(out format, ref value);
+		}
+
 		private string GetReturning<TModel>(bool returning) where TModel : ICreeperModel
 		{
 			if (returning)

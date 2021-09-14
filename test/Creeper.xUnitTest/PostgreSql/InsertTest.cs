@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Xunit;
-using Xunit.Extensions.Ordering;
 
 namespace Creeper.xUnitTest.PostgreSql
 {

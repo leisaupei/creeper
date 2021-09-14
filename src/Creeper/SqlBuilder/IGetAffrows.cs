@@ -13,7 +13,7 @@ namespace Creeper.SqlBuilder
 		/// mysql执行update操作若修改的值与数据库一致会返回0（postgresql/sqlserver等则会返回1）；执行upsert语句时，插入操作返回1，更新操作返回2（其余只返回1）
 		/// </summary>
 		/// <returns></returns>
-		ISqlBuilder PipeToAffrows();
+		ISqlBuilder ToAffrowsPipe();
 
 		/// <summary>
 		/// 返回修改行数，此处受影响行数根据数据库规则返回。<br/>

@@ -62,7 +62,8 @@ namespace Creeper.xUnitTest.Access.v2007
 		[Fact]
 		public void Count()
 		{
-			var result1 = Context.Select<ProductModel>().Count();
+			var count = Context.Select<ProductModel>().Count();
+			Assert.True(count > 0);
 		}
 
 		[Fact]
@@ -76,9 +77,7 @@ namespace Creeper.xUnitTest.Access.v2007
 				var result4 = Context.Select<ProductModel>().Where(a => a.Price > 10).ExceptAll("select *from [Product] where [Price] > 20").ToList();
 				var result5 = Context.Select<ProductModel>().Field(a => new { a.Id, a.Name }).Where(a => a.Price > 10).Except<ProductModel>(binder => binder.Field(a => new { a.Id, a.Name }).Where(a => a.Price > 20)).ToList<(int, string)>();
 			});
-#pragma warning disable CA1416 // 验证平台兼容性
 			Assert.IsType<OleDbException>(exception.InnerException);
-#pragma warning restore CA1416 // 验证平台兼容性
 		}
 
 		[Fact]
@@ -126,9 +125,7 @@ namespace Creeper.xUnitTest.Access.v2007
 				var result5 = Context.Select<ProductModel>().Field(a => new { a.Id, a.Name }).Where(a => a.Price > 10)
 					.Intersect<ProductModel>(binder => binder.Field(a => new { a.Id, a.Name }).Where(a => a.Price > 20)).ToList<(int, string)>();
 			});
-#pragma warning disable CA1416 // 验证平台兼容性
 			Assert.IsType<OleDbException>(exception.InnerException);
-#pragma warning restore CA1416 // 验证平台兼容性
 		}
 
 		[Fact]
@@ -315,6 +312,20 @@ namespace Creeper.xUnitTest.Access.v2007
 
 			var result13 = Context.Select<UniPkTestModel>().Where(a => !"Sam".Contains(a.Name)).FirstOrDefault();
 			var result14 = Context.Select<UniPkTestModel>().Where(a => !a.Name.Contains("Sam")).FirstOrDefault();
+		}
+
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<IdenPkTestModel>().CountDistinct(a => a.Name);
+			Assert.True(count > 0);
+		}
+
+		[Fact]
+		public void Distinct()
+		{
+			//var names1 = Context.Select<IdenPkTestModel>().Distinst().Take(10).ToList(a => a.Name);
+			//var names2 = Context.Select<IdenPkTestModel>().Distinst().OrderByDescending(a => a.Name).Page(3, 5).ToList(a => a.Name);
 		}
 	}
 }

@@ -12,7 +12,7 @@ namespace Creeper.xUnitTest.Access.v2003
 {
 	public class UpdateTest : BaseTest, IUpdateTest
 	{
-		private Guid Id => Context.Select<UniPkTestModel>().OrderByDescending(a => a.Id).Take(1).FirstOrDefault().Id;
+		private static Guid Id => Context.Select<UniPkTestModel>().OrderByDescending(a => a.Id).Take(1).FirstOrDefault().Id;
 		[Fact]
 		public void ReturnAffrows()
 		{
@@ -59,6 +59,12 @@ namespace Creeper.xUnitTest.Access.v2003
 		}
 		[Fact]
 		public void Inc()
+		{
+			throw new NotImplementedException();
+		}
+
+		[Fact]
+		public void UpdateSave()
 		{
 			throw new NotImplementedException();
 		}

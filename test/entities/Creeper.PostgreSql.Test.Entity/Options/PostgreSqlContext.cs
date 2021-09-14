@@ -4,6 +4,7 @@ using System;
 using System.Data.Common;
 using Npgsql;
 using Creeper.PostgreSql.Extensions;
+using Creeper.PostgreSql;
 
 namespace Creeper.PostgreSql.Test.Entity.Options
 {

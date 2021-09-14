@@ -308,5 +308,18 @@ namespace Creeper.xUnitTest.SqlServer
 			});
 			Assert.IsType<SqlException>(exception.InnerException);
 		}
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<IdenPkModel>().CountDistinct(a => a.Name);
+			Assert.True(count > 0);
+		}
+
+		[Fact]
+		public void Distinct()
+		{
+			//var names1 = Context.Select<IdenPkModel>().Distinst().Take(10).ToList(a => a.Name);
+			//var names2 = Context.Select<IdenPkModel>().Distinst().OrderByDescending(a => a.Name).Page(2, 10).ToList(a => a.Name);
+		}
 	}
 }

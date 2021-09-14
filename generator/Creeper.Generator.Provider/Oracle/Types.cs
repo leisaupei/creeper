@@ -76,8 +76,6 @@ namespace Creeper.Generator.Provider.Oracle
 					};
 					break;
 
-
-
 				case "binary_double": cSharpType = "double"; break;
 				case "binary_float": cSharpType = "float"; break;
 				default:

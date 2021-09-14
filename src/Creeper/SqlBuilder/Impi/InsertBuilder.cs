@@ -170,7 +170,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// 返回受影响行数
 		/// </summary>
 		/// <returns></returns>
-		public ISqlBuilder PipeToAffrows() => Pipe<int>(PipeReturnType.Affrows);
+		public ISqlBuilder ToAffrowsPipe() => Pipe<int>(PipeReturnType.Affrows);
 
 		#region Override
 		public override string ToString() => base.ToString();

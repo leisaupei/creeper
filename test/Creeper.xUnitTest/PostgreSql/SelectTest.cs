@@ -15,7 +15,6 @@ using System.Diagnostics;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Extensions.Ordering;
 
 namespace Creeper.xUnitTest.PostgreSql
 {
@@ -421,6 +420,20 @@ namespace Creeper.xUnitTest.PostgreSql
 			var result3 = Context.Select<CreeperPeopleModel>().Where(a => a.Age > 10).Union("select *from \"creeper\".\"people\" where \"age\" > 20").ToList();
 			var result4 = Context.Select<CreeperPeopleModel>().Where(a => a.Age > 10).UnionAll("select *from \"creeper\".\"people\" where \"age\" > 20").ToList();
 			var result5 = Context.Select<CreeperPeopleModel>().Field(a => new { a.Id, a.Name }).Where(a => a.Age > 10).Union<CreeperPeopleModel>(binder => binder.Field(a => new { a.Id, a.Name }).Where(a => a.Age > 20)).ToList<(Guid, string)>();
+		}
+
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<CreeperIdenPkModel>().CountDistinct(a => a.Name);
+			Assert.True(count > 0);
+		}
+
+		[Fact]
+		public void Distinct()
+		{
+			//var names = Context.Select<CreeperIdenPkModel>().Distinst().ToList(a => a.Name);
+			//Assert.True(names.Count > 0);
 		}
 	}
 }

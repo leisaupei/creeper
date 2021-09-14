@@ -90,7 +90,7 @@ namespace Creeper.Driver
 		public static int InsertRange<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models, bool singleCommand = true) where TModel : class, ICreeperModel, new()
 		{
 			if (singleCommand) return execute.InsertRange<TModel>().Set(models).ToAffrows();
-			var sqlBuilders = models.Select(model => execute.Insert<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Insert<TModel>().Set(model).ToAffrowsPipe());
 			return execute.ExecutePipe(sqlBuilders).OfType<int>().Sum();
 		}
 
@@ -111,7 +111,7 @@ namespace Creeper.Driver
 		public static async ValueTask<int> InsertRangeAsync<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models, bool singleCommand = true, CancellationToken cancellationToken = default) where TModel : class, ICreeperModel, new()
 		{
 			if (singleCommand) return await execute.InsertRange<TModel>().Set(models).ToAffrowsAsync(cancellationToken);
-			var sqlBuilders = models.Select(model => execute.Insert<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Insert<TModel>().Set(model).ToAffrowsPipe());
 			var affrows = await execute.ExecutePipeAsync(sqlBuilders, cancellationToken);
 			return affrows.OfType<int>().Sum();
 		}
@@ -202,7 +202,7 @@ namespace Creeper.Driver
 		/// <returns></returns>
 		public static int UpdateSaveRange<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models) where TModel : class, ICreeperModel, new()
 		{
-			var sqlBuilders = models.Select(model => execute.Update<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Update<TModel>().Set(model).ToAffrowsPipe());
 			return execute.ExecutePipe(sqlBuilders).OfType<int>().Sum();
 		}
 
@@ -214,7 +214,7 @@ namespace Creeper.Driver
 		/// <returns></returns>
 		public static async ValueTask<int> UpdateSaveRangeAsync<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models, CancellationToken cancellationToken = default) where TModel : class, ICreeperModel, new()
 		{
-			var sqlBuilders = models.Select(model => execute.Update<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Update<TModel>().Set(model).ToAffrowsPipe());
 			var affrows = await execute.ExecutePipeAsync(sqlBuilders, cancellationToken);
 			return affrows.OfType<int>().Sum();
 		}
@@ -226,7 +226,7 @@ namespace Creeper.Driver
 		/// <param name="execute"></param>
 		/// <param name="model"></param>
 		/// <returns>受影响行和修改后的数据</returns>
-		public static AffrowsResult<TModel> UpdateResult<TModel>(this ICreeperExecute execute, TModel model) where TModel : class, ICreeperModel, new()
+		public static AffrowsResult<TModel> UpdateSaveResult<TModel>(this ICreeperExecute execute, TModel model) where TModel : class, ICreeperModel, new()
 			=> execute.Update<TModel>().Set(model).ToAffrowsResult();
 
 		/// <summary>
@@ -237,7 +237,7 @@ namespace Creeper.Driver
 		/// <param name="model"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns>受影响行和修改后的数据</returns>
-		public static Task<AffrowsResult<TModel>> UpdateResultAsync<TModel>(this ICreeperExecute execute, TModel model, CancellationToken cancellationToken = default) where TModel : class, ICreeperModel, new()
+		public static Task<AffrowsResult<TModel>> UpdateSaveResultAsync<TModel>(this ICreeperExecute execute, TModel model, CancellationToken cancellationToken = default) where TModel : class, ICreeperModel, new()
 			=> execute.Update<TModel>().Set(model).ToAffrowsResultAsync(cancellationToken);
 		#endregion
 
@@ -315,11 +315,15 @@ namespace Creeper.Driver
 
 		#region Upsert
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <returns>返回行数遵循数据库规则，如: mysql使用此方法更新时返回受影响行数返回2，插入/更新值与数据库一致时返回1，但其他数据库可能没有此规则</returns>
@@ -327,11 +331,15 @@ namespace Creeper.Driver
 			=> new UpsertBuilder<TModel>(execute);
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="model"></param>
@@ -340,11 +348,15 @@ namespace Creeper.Driver
 			=> execute.Upsert<TModel>().Set(model).ToAffrows();
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="model"></param>
@@ -354,27 +366,35 @@ namespace Creeper.Driver
 			=> execute.Upsert<TModel>().Set(model).ToAffrowsAsync(cancellationToken);
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="models"></param>
 		/// <returns>返回行数遵循数据库规则，如: mysql使用此方法更新时返回受影响行数返回2，插入/更新值与数据库一致时返回1，但其他数据库可能没有此规则</returns>
 		public static int UpsertRange<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models) where TModel : class, ICreeperModel, new()
 		{
-			var sqlBuilders = models.Select(model => execute.Upsert<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Upsert<TModel>().Set(model).ToAffrowsPipe());
 			return execute.ExecutePipe(sqlBuilders).OfType<int>().Sum();
 		}
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="models"></param>
@@ -382,17 +402,21 @@ namespace Creeper.Driver
 		/// <returns>返回行数遵循数据库规则，如: mysql使用此方法更新时返回受影响行数返回2，插入/更新值与数据库一致时返回1，但其他数据库可能没有此规则</returns>
 		public static async ValueTask<int> UpsertRangeAsync<TModel>(this ICreeperExecute execute, IEnumerable<TModel> models, CancellationToken cancellationToken = default) where TModel : class, ICreeperModel, new()
 		{
-			var sqlBuilders = models.Select(model => execute.Upsert<TModel>().Set(model).PipeToAffrows());
+			var sqlBuilders = models.Select(model => execute.Upsert<TModel>().Set(model).ToAffrowsPipe());
 			var affrows = await execute.ExecutePipeAsync(sqlBuilders, cancellationToken);
 			return affrows.OfType<int>().Sum();
 		}
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
-		/// </summary>库规则，如：mysql使用此方法更新时返回受影响行数返回2，插入/更新值与数据库一致时返回1，但其他数据库可能没有此规则
+		/// 根据数据库主键更新/插入，仅返回受影响行数
+		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="model"></param>
@@ -401,11 +425,15 @@ namespace Creeper.Driver
 			=> execute.Upsert<TModel>().Set(model).ToAffrowsResult();
 
 		/// <summary>
-		/// 根据数据库主键更新/插入，仅返回受影响行数。<br/>
-		/// 此处非主键唯一键(UniqueKey)不会并列为匹配条件(mysql除外, 使用的是ON DUPLICATE KEY语法), 所以包含唯一键的表需要保证数据库不包含此行。<br/>
-		/// 主键值为default(不赋值或忽略)时，必定是插入。若主键条件的行存在，则更新该行；否则插入一行, 主键取决于类型规则。<br/>
-		/// 整型自增主键：根据数据库自增标识；随机唯一主键: Guid程序会自动生成，其他算法需要赋值。
+		/// 根据数据库主键更新/插入，仅返回受影响行数
 		/// </summary>
+		/// <remarks>
+		/// 1. 此处非主键唯一键(UniqueKey)不会并列为匹配条件，MySQL除外, 使用的是ON DUPLICATE KEY语法, 所以包含唯一键的表，可能执行Insert操作时，需要保证数据库不包含此行。<br/>
+		/// 2. 若主键条件行不存在，或主键值赋值为default(不赋值或忽略)时，必定是插入；以下是插入规则：<br/>
+		///	--a) 整型自增主键：根据数据库自增标识；注意：不是Upsert传入的主键值<br/>
+		///	--b) 随机唯一主键：使用传入参数。若Guid类型值为default，框架会使用Guid.NewGuid()自动生成，其他算法需要自主赋值。<br/>
+		/// 3. 若主键条件行存在，则更新该行
+		/// </remarks>
 		/// <typeparam name="TModel"></typeparam>
 		/// <param name="execute"></param>
 		/// <param name="model"></param>

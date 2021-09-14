@@ -19,7 +19,7 @@ namespace Creeper.Access
 
 		protected override string WithQuote(string field) => string.Concat('[', field, ']');
 
-		protected override string CastStringDataType(string field) => string.Concat("CStr(", field, ")");
+		protected override string CastStringDataType(string field) => string.Concat("CStr(IIf(", field, " IS NULL,'',", field, "))");
 
 		protected override string StringConnectWord { get; } = "&";
 
@@ -49,29 +49,33 @@ namespace Creeper.Access
 
 		public override DbConnection GetDbConnection(string connectionString) => new OleDbConnection(connectionString);
 
+		protected override bool TrySetSpecialDbParameter(out string format, ref object value)
+		{
+			//Access时间类型需要精确到秒
+			if (value is DateTime dt && dt.Millisecond != 0)
+				value = new DateTime(dt.Ticks - (dt.Ticks % TimeSpan.TicksPerSecond), dt.Kind);
+			return base.TrySetSpecialDbParameter(out format, ref value);
+		}
+
 		protected override string GetSelectSql(string columns, string table, string alias, IEnumerable<string> wheres, string groupBy, string having, string orderBy, int? limit, int? offset, string union, string except, string intersect, string join, string afterTableStr)
 		{
 			var isSkip = (offset ?? 0) > 0;
 			StringBuilder sqlText;
 			var top = limit.HasValue ? $" TOP {limit} " : null;
-
 			if (!isSkip)
 			{
+				var isCountDistinct = columns.StartsWith("COUNT(DISTINCT");
+				var innerColumns = isCountDistinct ? columns[14..].TrimEnd(')') : columns;
 				if (limit > 0) columns = string.Concat(top, columns);
-				sqlText = new StringBuilder($"SELECT {columns} FROM {table} AS {alias}").AppendLine();
-				if (!string.IsNullOrWhiteSpace(afterTableStr)) sqlText.AppendLine(afterTableStr);
-				if (!string.IsNullOrEmpty(join)) sqlText.AppendLine(join);
-				if (wheres?.Count() > 0) sqlText.Append("WHERE ").AppendJoin(" AND ", wheres).AppendLine();
-				if (!string.IsNullOrEmpty(union)) sqlText.AppendLine(union);
-				if (!string.IsNullOrEmpty(except)) sqlText.AppendLine(except);
-				if (!string.IsNullOrEmpty(intersect)) sqlText.AppendLine(intersect);
-
-				if (!string.IsNullOrEmpty(groupBy))
-				{
-					sqlText.Append("GROUP BY ").AppendLine(groupBy);
-					if (!string.IsNullOrEmpty(having)) sqlText.Append("HAVING ").AppendLine(having);
-				}
+				sqlText = new StringBuilder($"SELECT {innerColumns} FROM {table} AS {alias}").AppendLine();
+				AddCondition(wheres, groupBy, having, union, except, intersect, join, sqlText);
 				if (!string.IsNullOrEmpty(orderBy)) sqlText.Append("ORDER BY ").AppendLine(orderBy);
+
+				if (isCountDistinct)
+				{
+					sqlText.Insert(0, $"SELECT COUNT(1) FROM (" + Environment.NewLine);
+					sqlText.Append($") AS cout");
+				}
 				return sqlText.ToString().TrimEnd();
 			}
 
@@ -81,18 +85,8 @@ namespace Creeper.Access
 			if (offset > 0 && (limit ?? 0) <= 0)
 				throw new CreeperException("Access分页必须传入页码, 不允许单独跳过前n条数据");
 
-			sqlText = new StringBuilder($"SELECT * FROM (SELECT {top} * FROM (SELECT TOP {limit ?? 0 + offset ?? 0} {columns} FROM {table} AS {alias}").AppendLine();
-			if (!string.IsNullOrWhiteSpace(afterTableStr)) sqlText.AppendLine(afterTableStr);
-			if (!string.IsNullOrEmpty(join)) sqlText.AppendLine(join);
-			if (wheres?.Count() > 0) sqlText.Append("WHERE ").AppendJoin(" AND ", wheres).AppendLine();
-			if (!string.IsNullOrEmpty(union)) sqlText.AppendLine(union);
-			if (!string.IsNullOrEmpty(except)) sqlText.AppendLine(except);
-			if (!string.IsNullOrEmpty(intersect)) sqlText.AppendLine(intersect);
-			if (!string.IsNullOrEmpty(groupBy))
-			{
-				sqlText.Append("GROUP BY ").AppendLine(groupBy);
-				if (!string.IsNullOrEmpty(having)) sqlText.Append("HAVING ").AppendLine(having);
-			}
+			sqlText = new StringBuilder($"SELECT * FROM (SELECT {top} * FROM (SELECT TOP {(limit ?? 0) + (offset ?? 0)} {columns} FROM {table} AS {alias}").AppendLine();
+			AddCondition(wheres, groupBy, having, union, except, intersect, join, sqlText);
 
 			sqlText.Append("ORDER BY ").AppendLine(orderBy);
 
@@ -110,35 +104,29 @@ namespace Creeper.Access
 				orderByList.Add(str);
 			}
 
-			//var orderByMatches = _orderByRegex.Matches(orderBy);
-			//var orderByList = new List<string>();
-			//for (int i = 0; i < orderByMatches.Count; i++)
-			//{
-
-			//}
-			//var orderBys = orderBy.Split(',');
-			//for (int i = 0; i < orderBys.Length; i++)
-			//{
-			//	if (orderBys[i].Contains(" asc", StringComparison.OrdinalIgnoreCase))
-			//		orderBys[i] = orderBys[i].Replace(" asc", " DESC", StringComparison.OrdinalIgnoreCase);
-			//	else if (orderBys[i].Contains(" desc", StringComparison.OrdinalIgnoreCase))
-			//		orderBys[i] = orderBys[i].Replace(" desc", " ASC", StringComparison.OrdinalIgnoreCase);
-			//	else throw new ArgumentException("Access排序字段不能忽略ASC/DESC后缀");
-			//}
 			sqlText.Append(") ").Append("ORDER BY ").AppendJoin(',', orderByList).AppendLine()
 				.Append(") ").Append("ORDER BY ").AppendLine(orderBy);
 
 			return sqlText.ToString().TrimEnd();
 
 		}
-		private static readonly Regex _orderByRegex = new Regex(@"(.*?\s+)(asc|desc)\s*", RegexOptions.IgnoreCase);
-		protected override bool TrySetSpecialDbParameter(out string format, ref object value)
+
+		private static void AddCondition(IEnumerable<string> wheres, string groupBy, string having, string union, string except, string intersect, string join, StringBuilder sqlText)
 		{
-			//Access时间类型需要精确到秒
-			if (value is DateTime dt && dt.Millisecond != 0)
-				value = new DateTime(dt.Ticks - (dt.Ticks % TimeSpan.TicksPerSecond), dt.Kind);
-			return base.TrySetSpecialDbParameter(out format, ref value);
+			if (!string.IsNullOrEmpty(join)) sqlText.AppendLine(join);
+			if (wheres?.Count() > 0) sqlText.Append("WHERE ").AppendJoin(" AND ", wheres).AppendLine();
+			if (!string.IsNullOrEmpty(union)) sqlText.AppendLine(union);
+			if (!string.IsNullOrEmpty(except)) sqlText.AppendLine(except);
+			if (!string.IsNullOrEmpty(intersect)) sqlText.AppendLine(intersect);
+
+			if (!string.IsNullOrEmpty(groupBy))
+			{
+				sqlText.Append("GROUP BY ").AppendLine(groupBy);
+				if (!string.IsNullOrEmpty(having)) sqlText.Append("HAVING ").AppendLine(having);
+			}
 		}
+
+		private static readonly Regex _orderByRegex = new Regex(@"(.*?\s+)(asc|desc)\s*", RegexOptions.IgnoreCase);
 
 		protected override string GetUpdateSql<TModel>(string table, string alias, List<string> setList, List<string> whereList, bool returning)
 		{

@@ -3,6 +3,7 @@ using Creeper.Extensions;
 using Creeper.PostgreSql.Test.Entity.Model;
 using Newtonsoft.Json.Linq;
 using Npgsql;
+using Npgsql.LegacyPostgis;
 using NpgsqlTypes;
 using System;
 using System.Collections;
@@ -12,7 +13,6 @@ using System.Net;
 using System.Text;
 using System.Xml;
 using Xunit;
-using Xunit.Extensions.Ordering;
 
 namespace Creeper.xUnitTest.PostgreSql
 {
@@ -428,6 +428,14 @@ namespace Creeper.xUnitTest.PostgreSql
 		{
 			//var affrows = _context.Update<TypeTestModel>().Where(a=>a.Id ==Guid.Empty).Set(a => a.Array_type, null).ToAffrows();
 			var affrows = Context.Update<CreeperTypeTestModel>().Where(a => a.Id == Guid.Empty).Set(a => a.Array_type[0], 1).ToAffrows();
+			Assert.True(affrows > 0);
+
+		}
+		[Fact]
+		public void Geometry()
+		{
+			PostgisGeometry geom = new PostgisPoint(22, 11);
+			var affrows = Context.Update<CreeperTypeTestModel>().Where(a => a.Id == Guid.Empty).Set(a => a.Geometry_type, geom).ToAffrows();
 			Assert.True(affrows > 0);
 
 		}

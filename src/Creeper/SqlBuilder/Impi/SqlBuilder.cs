@@ -26,7 +26,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// <summary>
 		/// 缓存过期时间
 		/// </summary>
-		private TimeSpan? _dbCacheExpireTime;
+		private int? _dbCacheExpireTime;
 		private DataBaseType _dataBaseType = DataBaseType.Default;
 		private readonly ICreeperContext _context;
 		private readonly ICreeperExecute _execute;
@@ -49,8 +49,7 @@ namespace Creeper.SqlBuilder.Impi
 		/// <summary>
 		/// 主表别名, 默认为: "a"
 		/// </summary>
-		protected string MainAlias
-		{ get; set; } = "a";
+		protected string MainAlias { get; set; } = "a";
 
 		/// <summary>
 		/// 是否返回默认值, 默认: false
@@ -95,11 +94,24 @@ namespace Creeper.SqlBuilder.Impi
 		/// </summary>
 		/// <returns></returns>
 		public TBuilder By(DataBaseType dataBaseType) { _dataBaseType = dataBaseType; return This; }
+
 		/// <summary>
 		/// 使用数据库缓存, 仅支持FirstOrDefault,ToScalar方法
 		/// </summary>
 		/// <returns></returns>
-		public TBuilder ByCache(TimeSpan? expireTime = null)
+		public TBuilder ByCache(TimeSpan? expireTime)
+		{
+			_ = _context.Cache ?? throw new CreeperDbCacheNotFoundException();
+			_cacheType = DbCacheType.Default;
+			_dbCacheExpireTime = expireTime?.Seconds;
+			return This;
+		}
+
+		/// <summary>
+		/// 使用数据库缓存, 仅支持FirstOrDefault,ToScalar方法
+		/// </summary>
+		/// <returns></returns>
+		public TBuilder ByCache(int? expireTime = null)
 		{
 			_ = _context.Cache ?? throw new CreeperDbCacheNotFoundException();
 			_cacheType = DbCacheType.Default;
@@ -116,7 +128,7 @@ namespace Creeper.SqlBuilder.Impi
 		{
 			_ = _context.Cache ?? throw new CreeperDbCacheNotFoundException();
 			_cacheType = DbCacheType.PkCache;
-			_dbCacheExpireTime = expireTime;
+			_dbCacheExpireTime = expireTime?.Seconds;
 			return This;
 		}
 
@@ -385,7 +397,7 @@ namespace Creeper.SqlBuilder.Impi
 			var key = string.Concat(_cachePrefix, ToString().GetMD5String());
 			if (_context.Cache.Exists(key)) return (TResult)_context.Cache.Get(key, typeof(TResult));
 			var ret = fn.Invoke();
-			_context.Cache.Set(key, ret, _dbCacheExpireTime);
+			_context.Cache.Set(key, ret, _dbCacheExpireTime ?? _context.Cache.ExpireSeconds);
 			return ret;
 		}
 		private async Task<TResult> GetCacheResultAsync<TResult>(Func<Task<TResult>> fn)
@@ -394,7 +406,7 @@ namespace Creeper.SqlBuilder.Impi
 			var key = string.Concat(_cachePrefix, ToString().GetMD5String());
 			if (await _context.Cache.ExistsAsync(key)) return (TResult)await _context.Cache.GetAsync(key, typeof(TResult));
 			var ret = await fn.Invoke();
-			await _context.Cache.SetAsync(key, ret, _dbCacheExpireTime);
+			await _context.Cache.SetAsync(key, ret, _dbCacheExpireTime ?? _context.Cache.ExpireSeconds);
 			return ret;
 		}
 		private async ValueTask<TResult> GetCacheResultAsync<TResult>(Func<ValueTask<TResult>> fn) => await GetCacheResultAsync(() => fn.Invoke().AsTask());

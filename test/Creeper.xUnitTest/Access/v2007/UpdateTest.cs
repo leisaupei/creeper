@@ -68,5 +68,14 @@ namespace Creeper.xUnitTest.Access.v2007
 			var affrows = Context.Update(info).Inc(a => a.LongType, 200).ToAffrows();
 			Assert.Equal(1, affrows);
 		}
+
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<ProductModel>().FirstOrDefault();
+			info.Stock += 20;
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
+		}
 	}
 }

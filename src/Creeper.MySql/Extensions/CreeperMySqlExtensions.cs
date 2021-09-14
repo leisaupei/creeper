@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
 		/// 因Mysql空间数据为自定义类型, 所以放置控制开关, 默认是false
 		/// </summary>
 		/// <param name="option"></param>
-		public static void UseMySqlGeometry(this CreeperMySqlContextOptions option)
+		public static void UseGeometry(this CreeperMySqlContextOptions option)
 		{
 			option.UseGeometryType = true;
 		}

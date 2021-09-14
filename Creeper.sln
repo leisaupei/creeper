@@ -31,24 +31,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{D880CB7C-B8F
 		sql\sqlserver.sql = sql\sqlserver.sql
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{3BFE82B4-5E34-46E1-ABEF-5FD8560691B0}"
-	ProjectSection(SolutionItems) = preProject
-		docs\Attention.md = docs\Attention.md
-		docs\CodeMakerDiscription.md = docs\CodeMakerDiscription.md
-		docs\CreeperContext.md = docs\CreeperContext.md
-		docs\CustomQuery.md = docs\CustomQuery.md
-		docs\DbCache.md = docs\DbCache.md
-		docs\Delete.md = docs\Delete.md
-		docs\Insert.md = docs\Insert.md
-		docs\JoinQuery.md = docs\JoinQuery.md
-		docs\README.md = docs\README.md
-		docs\Select.md = docs\Select.md
-		docs\SelectExpression.md = docs\SelectExpression.md
-		docs\Transaction.md = docs\Transaction.md
-		docs\Update.md = docs\Update.md
-		docs\Upsert.md = docs\Upsert.md
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Creeper.Sqlite", "src\Creeper.Sqlite\Creeper.Sqlite.csproj", "{3837651B-E62A-4818-B198-AD86187CF8E7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Creeper.Oracle", "src\Creeper.Oracle\Creeper.Oracle.csproj", "{C4BF7B1F-EEC6-4AE4-A121-58EDCE255D41}"

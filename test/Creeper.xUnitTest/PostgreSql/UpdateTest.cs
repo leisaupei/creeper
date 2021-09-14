@@ -5,7 +5,6 @@ using Creeper.xUnitTest.Contracts;
 using System;
 using System.ComponentModel;
 using Xunit;
-using Xunit.Extensions.Ordering;
 namespace Creeper.xUnitTest.PostgreSql
 {
 	public class UpdateTest : BaseTest, IUpdateTest
@@ -81,5 +80,13 @@ namespace Creeper.xUnitTest.PostgreSql
 			Assert.Equal(value, result.Value.Name);
 		}
 
+		[Fact]
+		public void UpdateSave()
+		{
+			var info = Context.Select<CreeperIdenPkModel>().Where(a => a.Name != "Trick").FirstOrDefault();
+			info.Name = "Trick";
+			var affrows = Context.UpdateSave(info);
+			Assert.Equal(1, affrows);
+		}
 	}
 }

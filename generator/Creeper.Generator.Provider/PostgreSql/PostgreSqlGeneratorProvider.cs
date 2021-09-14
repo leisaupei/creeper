@@ -273,7 +273,7 @@ ORDER BY tv.schemaname, tv.tablename, c.attnum ASC;
 					case "JToken":
 						list.Add("using Newtonsoft.Json.Linq;");
 						break;
-					case "Dictionary":
+					case "Dictionary<string, string>":
 						list.Add("using System.Collections.Generic;");
 						break;
 				}
@@ -293,6 +293,9 @@ ORDER BY tv.schemaname, tv.tablename, c.attnum ASC;
 				hs.Add("using Creeper.PostgreSql.Extensions;");
 			if (_isGeometryConnection)
 				hs.Add("using Npgsql;");
+			if (_composites.Count > 0 || _enums.Count > 0)
+				hs.Add("using Creeper.PostgreSql;");
+
 			return hs.ToList();
 		}
 		public override string GetDbConnectionOptionsActionString()

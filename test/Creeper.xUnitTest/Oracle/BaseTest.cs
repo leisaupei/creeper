@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using Creeper.Generic;
 
 namespace Creeper.xUnitTest.Oracle
 {
@@ -30,9 +31,9 @@ namespace Creeper.xUnitTest.Oracle
 				options.AddOracleContext<OracleContext>(a =>
 				{
 					a.UseCache<HashtableTestDbCache>();
-					a.UseStrategy(Generic.DataBaseTypeStrategy.OnlyMain);
+					a.UseStrategy(DataBaseTypeStrategy.OnlyMain);
 					a.UseConnectionString(MainConnectionString);
-					a.SetColumnNameStyle(Generic.ColumnNameStyle.Pascal);
+					a.SetColumnNameStyle(ColumnNameStyle.Pascal);
 				});
 			});
 			var serviceProvider = services.BuildServiceProvider();

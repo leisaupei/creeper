@@ -24,7 +24,21 @@ namespace Creeper.xUnitTest.Oracle
 		[Fact]
 		public void Count()
 		{
-			var result1 = Context.Select<ProductModel>().Count();
+			var count = Context.Select<ProductModel>().Count();
+			Assert.True(count > 0);
+		}
+
+		[Fact]
+		public void CountDistinct()
+		{
+			var count = Context.Select<IdenPkTestModel>().CountDistinct(a => a.Name);
+			Assert.True(count > 0);
+		}
+		[Fact]
+		public void Distinct()
+		{
+			//var names = Context.Select<IdenPkTestModel>().Distinst().ToList(a => a.Name);
+			//Assert.True(names.Count > 0);
 		}
 
 		[Fact, Description("Oracle不支持EXCEPT ALL语法")]

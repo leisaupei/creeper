@@ -45,7 +45,7 @@ namespace Creeper.Driver
 		/// 设置数据库主从策略, 默认是<see cref="DataBaseTypeStrategy.MainIfSecondaryEmpty"/>
 		/// </summary>
 		/// <param name="strategy"></param>
-		public void UseStrategy(DataBaseTypeStrategy strategy)
+		public void UseStrategy(DataBaseTypeStrategy strategy = DataBaseTypeStrategy.MainIfSecondaryEmpty)
 		{
 			Strategy = strategy;
 		}

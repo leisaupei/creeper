@@ -108,6 +108,32 @@ namespace Creeper.SqlBuilder
 		ValueTask<long> CountAsync(CancellationToken cancellationToken = default);
 
 		/// <summary>
+		/// 返回去重字段行数
+		/// </summary>
+		/// <returns></returns>
+		long CountDistinct(Expression<Func<TModel, dynamic>> selector);
+
+		/// <summary>
+		/// 返回去重字段行数
+		/// </summary>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		ValueTask<long> CountDistinctAsync(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default);
+
+		/// <summary>
+		/// 返回去重字段行数
+		/// </summary>
+		/// <returns></returns>
+		long CountDistinct<TSource>(Expression<Func<TSource, dynamic>> selector);
+
+		/// <summary>
+		/// 返回去重字段行数
+		/// </summary>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		ValueTask<long> CountDistinctAsync<TSource>(Expression<Func<TModel, dynamic>> selector, CancellationToken cancellationToken = default);
+
+		/// <summary>
 		/// 排除另一个ISelectBuilder, 相同的行只会返回一行
 		/// </summary>
 		/// <param name="selectBuilderBinder">select语句的builder</param>

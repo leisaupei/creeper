@@ -216,21 +216,11 @@ namespace Creeper.xUnitTest.SqlServer
 		[Description("暂不支持此类型, 或以下面方式获取")]
 		public void Geography()
 		{
-			//var obj = Context.Select<TypeTestModel>(a => a.Id == Id).FirstOrDefault<object>(a => a.GeographyType);
-			//var type = obj.GetType();
-
-			//var obj1 = Context.Select<TypeTestModel>(a => a.Id == Id).FirstOrDefault<object>(a => a.GeometryType);
-			//var type1 = obj1.GetType();
-
-			//var obj2 = Context.Select<TypeTestModel>(a => a.Id == Id).FirstOrDefault<object>(a => a.HierarchyidType);
-			//var type2 = obj2.GetType();
-
 			SqlGeography geography = SqlGeography.Null;
 			Context.ExecuteReader(dr =>
 			{
 				var sqlDr = (SqlDataReader)dr;
-				geography = sqlDr.GetFieldValue<SqlGeography>(0);
-				//geography = SqlGeography.Deserialize(sqlDr.GetSqlBytes(0));
+				geography = SqlGeography.Deserialize(sqlDr.GetSqlBytes(0));
 			}, "select geographytype from typetest where id = 11");
 
 			////Assert.IsType<object>(obj);
@@ -250,8 +240,7 @@ namespace Creeper.xUnitTest.SqlServer
 			Context.ExecuteReader(dr =>
 			{
 				var sqlDr = (SqlDataReader)dr;
-				geometry = sqlDr.GetFieldValue<SqlGeometry>(0);
-				//geometry = SqlGeometry.Deserialize(sqlDr.GetSqlBytes(0));
+				geometry = SqlGeometry.Deserialize(sqlDr.GetSqlBytes(0));
 			}, "select geometrytype from typetest where id = 11");
 
 			//var obj = Context.Select<TypeTestModel>(a => a.Id == Id).FirstOrDefault<object>(a => a.GeographyType);
@@ -293,7 +282,7 @@ namespace Creeper.xUnitTest.SqlServer
 		/// </summary>
 		/// <param name="value"></param>
 		[Theory]
-		[InlineData(int.MaxValue)]
+		[InlineData(99)]
 		public void Int(int value)
 		{
 			var obj = Context.Select<TypeTestModel>(a => a.Id == Id).FirstOrDefault<object>(a => a.IntType);
