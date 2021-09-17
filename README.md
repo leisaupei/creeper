@@ -50,9 +50,9 @@ public void ConfigureServices(IServiceCollection services)
     });
 }
 ```
-> ``context.UseCache<DbCache>()``参阅[数据库缓存](docs/DbCache.md)
+> ``context.UseCache<DbCache>()``参阅[数据库缓存](https://github.com/leisaupei/creeper/wiki/DbCache)
 
-> ``PostgreSqlContext``参阅[DbContext说明](docs/CreeperContext.md)
+> ``PostgreSqlContext``参阅[DbContext说明](https://github.com/leisaupei/creeper/wiki/DB-First#creepercontext%E8%AF%B4%E6%98%8E)
 ## Controller或其他注入类
 ``` C#
 public class SomeController : Controller
