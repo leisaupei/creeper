@@ -22,8 +22,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Creeper" Version="1.1.1" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.3" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\Creeper\Creeper.csproj" />
+  </ItemGroup>
 </Project>
